@@ -106,15 +106,19 @@
                     </div>
                 </div>
                 <div class="bg-white rounded-3xl shadow-xl overflow-hidden border">
-                    <div class="p-4 bg-emerald-600 font-bold text-white uppercase text-xs tracking-widest">2. ข้อมูลสมาชิก</div>
+                    <div class="p-4 bg-emerald-600 font-bold text-white uppercase text-xs tracking-widest flex justify-between items-center">
+                        <span>2. ข้อมูลสมาชิก</span>
+                        <input type="text" id="searchUser" placeholder="🔍 ค้นหาสมาชิก..." class="text-slate-800 px-3 py-1 rounded-lg text-[10px] outline-none focus:ring-2 ring-white">
+                    </div>
                     <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b font-bold text-slate-500 uppercase"><tr><th class="p-4">รหัสพนักงาน</th><th class="p-4">ชื่อ</th><th class="p-4">หน่วยงาน</th><th class="p-4">TEL</th><th class="p-4">USER</th><th class="p-4">PASS</th><th class="p-4 text-center">ลบ</th></tr></thead><tbody id="adminUserBody" class="divide-y"></tbody></table></div>
                 </div>
             </div>
             <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border">
-                <div class="p-5 bg-indigo-600 font-bold text-white uppercase text-xs tracking-widest flex justify-between items-center">
+                <div class="p-5 bg-indigo-600 font-bold text-white uppercase text-xs tracking-widest flex flex-wrap justify-between items-center gap-4">
                     <div class="flex items-center gap-4">
                         <span>รายการใบเบิกทั้งหมด</span>
                         <span id="staffNotice" class="hidden text-[10px] bg-white/20 px-2 py-1 rounded">สิทธิ์ผู้ดูแลรายการ</span>
+                        <input type="text" id="searchReq" placeholder="🔍 ค้นหาใบเบิก (ชื่อ/แผนก/ประเภท)..." class="text-slate-800 px-3 py-1.5 rounded-lg text-[10px] outline-none focus:ring-2 ring-white w-48 md:w-64">
                     </div>
                     <button id="clearHistoryBtn" onclick="clearAllHistory()" class="bg-red-500 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-[10px] transition shadow-md">
                         <i class="fas fa-trash-alt mr-1"></i> ล้างประวัติใบเบิกทั้งหมด
@@ -183,13 +187,15 @@
             messagingSenderId: "108104956407",
             appId: "1:108104956407:web:767d5c2ecb8069e24516f2"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         let currentUser = null;
         let adminUserSession = null;
 
-        // ข้อมูล Admin และชื่อจริง (อัปเดตตามที่ขอ)
+        // ตัวแปรเก็บข้อมูลดิบไว้กรอง
+        let rawRequests = {};
+        let rawUsers = {};
+
         const ADMIN_ROLES = {
             'admin': { role: 'superadmin', pass: '1234', name: 'SYSTEM ADMIN' },
             '26000946': { role: 'staff', pass: '9999', name: 'CHANA TUAMTED' },
@@ -280,7 +286,7 @@
                     fileName: file.name, fileData: e.target.result,
                     status: "รอดำเนินการ", 
                     timestamp: new Date().toLocaleString('th-TH'),
-                    managedBy: "" // เริ่มต้นว่างไว้
+                    managedBy: "" 
                 });
                 alert("ส่งสำเร็จ!");
                 document.getElementById(fileId).value = '';
@@ -310,7 +316,6 @@
                         const cancelBtn = r.status === 'รอดำเนินการ' 
                             ? `<button onclick="userCancelReq('${id}')" class="text-red-500 hover:text-red-700 text-xs font-bold border border-red-200 px-2 py-1 rounded">ยกเลิก</button>`
                             : `<span class="text-gray-300 text-xs">-</span>`;
-                        // แสดงชื่อ Admin/Staff ฝั่ง User
                         const managedByText = r.managedBy || "รอดำเนินการ";
                         uHist.innerHTML += `<tr><td class="p-5 text-slate-400 text-xs">${r.timestamp}</td><td class="p-5 font-bold">${r.type}</td><td class="p-5 text-xs text-indigo-600">${r.note || '-'}</td><td class="p-5"><span class="status-badge ${sClass}">${r.status}</span></td><td class="p-5 text-[10px] font-bold text-slate-500">${managedByText}</td><td class="p-5 text-center">${cancelBtn}</td></tr>`;
                     }
@@ -318,23 +323,43 @@
             });
         }
 
-        onValue(ref(db, '/'), (snap) => {
-            const data = snap.val() || {};
-            const reqs = data.requisitions || {};
-            const users = data.users || {};
+        // --- เพิ่มระบบกรองข้อมูล ---
+        const renderAdminTables = () => {
+            const reqSearch = document.getElementById('searchReq').value.toLowerCase();
+            const userSearch = document.getElementById('searchUser').value.toLowerCase();
+            
             const adReq = document.getElementById('adminReqBody');
             const adUser = document.getElementById('adminUserBody');
             adReq.innerHTML = ''; adUser.innerHTML = '';
 
-            Object.keys(reqs).reverse().forEach(id => {
-                const r = reqs[id];
-                adReq.innerHTML += `<tr><td class="p-4 text-slate-400 text-[10px]">${r.timestamp}</td><td class="p-4 font-bold text-slate-800">${r.user}</td><td class="p-4">${r.dept}</td><td class="p-4"><button onclick="viewFile('${id}')" class="text-indigo-600 font-bold hover:underline"><i class="fas fa-file-download mr-1"></i> ${r.type}</button></td><td class="p-4 text-xs font-semibold text-indigo-700">${r.note || '-'}</td><td class="p-4 text-[10px] font-bold text-emerald-600">${r.managedBy || '-'}</td><td class="p-4 text-center"><select onchange="updateStatus('${id}', this.value)" class="text-xs border rounded-lg p-1.5"><option value="รอดำเนินการ" ${r.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option><option value="สำเร็จ" ${r.status==='สำเร็จ'?'selected':''}>สำเร็จ</option><option value="ยกเลิก" ${r.status==='ยกเลิก'?'selected':''}>ยกเลิก</option><option value="ยกเลิกเอง" ${r.status==='ยกเลิกเอง'?'selected':''}>ยกเลิกเอง</option></select></td></tr>`;
+            // กรองและแสดงใบเบิก
+            Object.keys(rawRequests).reverse().forEach(id => {
+                const r = rawRequests[id];
+                const content = `${r.user} ${r.dept} ${r.type} ${r.note} ${r.managedBy}`.toLowerCase();
+                if(content.includes(reqSearch)) {
+                    adReq.innerHTML += `<tr><td class="p-4 text-slate-400 text-[10px]">${r.timestamp}</td><td class="p-4 font-bold text-slate-800">${r.user}</td><td class="p-4">${r.dept}</td><td class="p-4"><button onclick="viewFile('${id}')" class="text-indigo-600 font-bold hover:underline"><i class="fas fa-file-download mr-1"></i> ${r.type}</button></td><td class="p-4 text-xs font-semibold text-indigo-700">${r.note || '-'}</td><td class="p-4 text-[10px] font-bold text-emerald-600">${r.managedBy || '-'}</td><td class="p-4 text-center"><select onchange="updateStatus('${id}', this.value)" class="text-xs border rounded-lg p-1.5"><option value="รอดำเนินการ" ${r.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option><option value="สำเร็จ" ${r.status==='สำเร็จ'?'selected':''}>สำเร็จ</option><option value="ยกเลิก" ${r.status==='ยกเลิก'?'selected':''}>ยกเลิก</option><option value="ยกเลิกเอง" ${r.status==='ยกเลิกเอง'?'selected':''}>ยกเลิกเอง</option></select></td></tr>`;
+                }
             });
 
-            Object.keys(users).forEach(uk => {
-                const u = users[uk];
-                adUser.innerHTML += `<tr><td class="p-4">${u.empID || '-'}</td><td class="p-4 font-bold">${u.name}</td><td class="p-4">${u.dept}</td><td class="p-4">${u.tel || '-'}</td><td class="p-4 text-indigo-600 font-bold">${u.user}</td><td class="p-4"><input type="text" value="${u.pass}" onchange="editUser('${uk}', 'pass', this.value)" class="border px-2 py-1 rounded w-20"></td><td class="p-4 text-center"><button onclick="deleteUser('${uk}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td></tr>`;
+            // กรองและแสดงสมาชิก
+            Object.keys(rawUsers).forEach(uk => {
+                const u = rawUsers[uk];
+                const content = `${u.empID} ${u.name} ${u.dept} ${u.user}`.toLowerCase();
+                if(content.includes(userSearch)) {
+                    adUser.innerHTML += `<tr><td class="p-4">${u.empID || '-'}</td><td class="p-4 font-bold">${u.name}</td><td class="p-4">${u.dept}</td><td class="p-4">${u.tel || '-'}</td><td class="p-4 text-indigo-600 font-bold">${u.user}</td><td class="p-4"><input type="text" value="${u.pass}" onchange="editUser('${uk}', 'pass', this.value)" class="border px-2 py-1 rounded w-20"></td><td class="p-4 text-center"><button onclick="deleteUser('${uk}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td></tr>`;
+                }
             });
+        };
+
+        // ผูกอีเวนต์พิมพ์ช่องค้นหา
+        document.getElementById('searchReq').addEventListener('input', renderAdminTables);
+        document.getElementById('searchUser').addEventListener('input', renderAdminTables);
+
+        onValue(ref(db, '/'), (snap) => {
+            const data = snap.val() || {};
+            rawRequests = data.requisitions || {};
+            rawUsers = data.users || {};
+            renderAdminTables();
         });
 
         onValue(ref(db, 'settings'), (snap) => {
@@ -351,7 +376,6 @@
 
         window.viewFile = (id) => { onValue(ref(db, 'requisitions/' + id), (snap) => { const d = snap.val(); if(d && d.fileData) { const nw = window.open(); nw.document.write(`<iframe src="${d.fileData}" frameborder="0" style="width:100%; height:100vh;"></iframe>`); } }, { onlyOnce: true }); };
         
-        // ฟังก์ชันอัปเดตสถานะพร้อมบันทึกชื่อผู้จัดการ (Staff1/Staff2/Admin)
         window.updateStatus = (id, val) => {
             const adminName = ADMIN_ROLES[adminUserSession] ? ADMIN_ROLES[adminUserSession].name : "ADMIN";
             update(ref(db, 'requisitions/' + id), { 
