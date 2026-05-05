@@ -46,7 +46,7 @@
         </div>
     </div>
 
-    <!-- [2] หน้าพนักงาน -->
+    <!-- [2] หน้าพนักงานเบิกของ -->
     <div id="userPage" class="page">
         <nav class="bg-slate-900 text-white p-4 flex justify-between px-8 shadow-xl">
             <div class="flex items-center gap-3">
@@ -114,7 +114,7 @@
             </div>
             <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border">
                 <div class="p-5 bg-indigo-600 font-bold text-white uppercase text-xs flex justify-between items-center">
-                    <span>รายการใบเบิกทั้งหมด</span>
+                    <span>รายการใบเบิกทั้งหมด (Staff)</span>
                     <button id="clearHistoryBtn" onclick="clearAllHistory()" class="bg-red-500 px-3 py-1.5 rounded-lg text-[10px]">ล้างประวัติ</button>
                 </div>
                 <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b font-bold text-slate-500 uppercase"><tr><th class="p-5">วัน/เวลา</th><th class="p-4">รหัส</th><th class="p-4">ชื่อ</th><th class="p-4">หน่วยงาน</th><th class="p-4">ประเภท</th><th class="p-4">หมายเหตุ</th><th class="p-4">ผู้จัดการ</th><th class="p-4 text-center">สถานะ</th></tr></thead><tbody id="adminReqBody" class="divide-y"></tbody></table></div>
@@ -148,7 +148,7 @@
         </div>
     </div>
 
-    <!-- Modal เปลี่ยนรหัสผ่าน User -->
+    <!-- Modal เปลี่ยนรหัสผ่าน User ทั่วไป -->
     <div id="pwModal">
         <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full mx-4">
             <h3 class="text-xl font-bold mb-4 text-indigo-700">เปลี่ยนรหัสผ่าน</h3>
@@ -167,6 +167,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, set, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+        // Firebase Configuration (ห้ามลบเด็ดขาด)
         const firebaseConfig = {
             apiKey: "AIzaSyB5J0CGXQYb2b1IyfICNWnf5eQfNXNeGcw",
             authDomain: "teeorder-11d9d.firebaseapp.com",
@@ -176,6 +177,7 @@
             messagingSenderId: "108104956407",
             appId: "1:108104956407:web:767d5c2ecb8069e24516f2"
         };
+
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         let currentUser = null;
@@ -188,25 +190,28 @@
             document.getElementById(id).classList.add('active');
         };
 
-        // --- LOGIN LOGIC (NEW: Check both Admins and Users Node) ---
+        // --- ระบบ Login ใหม่: เช็คจาก admins node ใน Firebase ---
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
             const u = document.getElementById('logUser').value;
             const p = document.getElementById('logPass').value;
 
-            // Check Admin Node first
+            // 1. ลองเช็คในฐานข้อมูล Admin/Staff ก่อน
             const adminSnap = await get(ref(db, 'admins/' + u));
             const adminData = adminSnap.val();
+
             if (adminData && adminData.pass === p) {
                 adminUserSession = u;
                 const role = adminData.role;
+                // ถ้าเป็น staff จะซ่อนเมนูตั้งค่าและจัดการสมาชิก
                 document.getElementById('adminOnlyPanel').classList.toggle('hidden', role === 'staff');
+                document.getElementById('clearHistoryBtn').classList.toggle('hidden', role === 'staff');
                 document.getElementById('adminRoleTitle').innerText = role === 'staff' ? 'Staff Control' : 'Admin Control';
                 document.getElementById('adminNameDisp').innerText = adminData.name;
                 return showPage('adminPage');
             }
 
-            // Check User Node
+            // 2. ถ้าไม่ใช่ Admin ให้เช็คพนักงานทั่วไป
             const userSnap = await get(ref(db, 'users/' + u));
             const user = userSnap.val();
             if(user && user.pass === p) {
@@ -216,24 +221,27 @@
                 showPage('userPage');
                 startHistoryListener(); 
             } else {
-                alert("Username หรือ Password ผิด!");
+                alert("Username หรือ Password ไม่ถูกต้อง!");
             }
         };
 
-        // --- ADMIN PASSWORD CHANGE (PERMANENT) ---
+        // --- ระบบเปลี่ยนรหัส Admin/Staff ถาวร ---
         window.changeAdminPassword = () => {
             const newPass = prompt("ระบุรหัสผ่านใหม่สำหรับ " + adminUserSession + ":");
             if (newPass && newPass.trim().length >= 4) {
-                update(ref(db, 'admins/' + adminUserSession), { pass: newPass })
+                update(ref(db, 'admins/' + adminUserSession), { pass: newPass.trim() })
                     .then(() => alert("เปลี่ยนรหัสผ่านถาวรสำเร็จ!"))
                     .catch((err) => alert("เกิดข้อผิดพลาด: " + err.message));
+            } else if (newPass) {
+                alert("รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร");
             }
         };
 
-        // --- USER FUNCTIONS ---
+        // --- ระบบเบิกของพนักงาน ---
         window.handleUpload = (type, fileId, noteId) => {
-            const file = document.getElementById(fileId).files[0];
-            if(!file) return alert("เลือกไฟล์ก่อน");
+            const fileInput = document.getElementById(fileId);
+            const file = fileInput.files[0];
+            if(!file) return alert("กรุณาเลือกไฟล์ใบเบิก");
             const reader = new FileReader();
             reader.onload = (e) => {
                 push(ref(db, 'requisitions'), {
@@ -241,9 +249,10 @@
                     type, note: document.getElementById(noteId).value || "-",
                     fileData: e.target.result, status: "รอดำเนินการ",
                     timestamp: new Date().toLocaleString('th-TH'), managedBy: ""
+                }).then(() => {
+                    alert("ส่งใบเบิกสำเร็จ!");
+                    fileInput.value = ''; document.getElementById(noteId).value = '';
                 });
-                alert("ส่งสำเร็จ!");
-                document.getElementById(fileId).value = ''; document.getElementById(noteId).value = '';
             };
             reader.readAsDataURL(file);
         };
@@ -257,19 +266,26 @@
                     const r = data[id];
                     if(currentUser && r.user === currentUser.name) {
                         let sClass = r.status === 'สำเร็จ' ? 'status-success' : (r.status === 'ยกเลิก' ? 'status-cancel' : (r.status === 'ยกเลิกเอง' ? 'status-self-cancel' : 'status-pending'));
-                        uHist.innerHTML += `<tr><td class="p-5 text-[10px]">${r.timestamp}</td><td class="p-5 font-bold">${r.type}</td><td class="p-5 text-xs">${r.note}</td><td class="p-5"><span class="status-badge ${sClass}">${r.status}</span></td><td class="p-5 text-[10px]">${r.managedBy || '-'}</td><td class="p-5 text-center">${r.status === 'รอดำเนินการ' ? `<button onclick="userCancelReq('${id}')" class="text-red-500">ยกเลิก</button>` : '-'}</td></tr>`;
+                        uHist.innerHTML += `<tr>
+                            <td class="p-5 text-[10px]">${r.timestamp}</td>
+                            <td class="p-5 font-bold">${r.type}</td>
+                            <td class="p-5 text-xs">${r.note}</td>
+                            <td class="p-5"><span class="status-badge ${sClass}">${r.status}</span></td>
+                            <td class="p-5 text-[10px]">${r.managedBy || '-'}</td>
+                            <td class="p-5 text-center">${r.status === 'รอดำเนินการ' ? `<button onclick="userCancelReq('${id}')" class="text-red-500">ยกเลิก</button>` : '-'}</td>
+                        </tr>`;
                     }
                 });
             });
         }
 
-        // --- GLOBAL LISTENERS ---
+        // --- ระบบดึงข้อมูลสำหรับ Admin/Staff ---
         onValue(ref(db, '/'), (snap) => {
             const data = snap.val() || {};
             rawRequests = data.requisitions || {};
             rawUsers = data.users || {};
             renderAdminTables();
-            // Logo & Title
+            // จัดการโลโก้และชื่อระบบ
             if(data.settings) {
                 const s = data.settings;
                 if(s.systemName) document.getElementById('sysTitle').innerText = s.systemName;
@@ -285,24 +301,60 @@
             const adReq = document.getElementById('adminReqBody');
             const adUser = document.getElementById('adminUserBody');
             adReq.innerHTML = ''; adUser.innerHTML = '';
+            
             Object.keys(rawRequests).reverse().forEach(id => {
                 const r = rawRequests[id];
-                adReq.innerHTML += `<tr><td class="p-4 text-[10px]">${r.timestamp}</td><td class="p-4">${r.empID || '-'}</td><td class="p-4 font-bold">${r.user}</td><td class="p-4 text-[10px]">${r.dept}</td><td class="p-4"><button onclick="viewFile('${id}')" class="text-indigo-600 underline font-bold">${r.type}</button></td><td class="p-4 text-xs">${r.note}</td><td class="p-4 text-[10px]">${r.managedBy || '-'}</td><td class="p-4 text-center"><select onchange="updateStatus('${id}', this.value)" class="text-xs border rounded p-1"><option value="รอดำเนินการ" ${r.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option><option value="สำเร็จ" ${r.status==='สำเร็จ'?'selected':''}>สำเร็จ</option><option value="ยกเลิก" ${r.status==='ยกเลิก'?'selected':''}>ยกเลิก</option></select></td></tr>`;
+                adReq.innerHTML += `<tr>
+                    <td class="p-4 text-[10px]">${r.timestamp}</td>
+                    <td class="p-4">${r.empID || '-'}</td>
+                    <td class="p-4 font-bold">${r.user}</td>
+                    <td class="p-4 text-[10px]">${r.dept}</td>
+                    <td class="p-4"><button onclick="viewFile('${id}')" class="text-indigo-600 underline font-bold">${r.type}</button></td>
+                    <td class="p-4 text-xs">${r.note}</td>
+                    <td class="p-4 text-[10px]">${r.managedBy || '-'}</td>
+                    <td class="p-4 text-center">
+                        <select onchange="updateStatus('${id}', this.value)" class="text-xs border rounded p-1">
+                            <option value="รอดำเนินการ" ${r.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option>
+                            <option value="สำเร็จ" ${r.status==='สำเร็จ'?'selected':''}>สำเร็จ</option>
+                            <option value="ยกเลิก" ${r.status==='ยกเลิก'?'selected':''}>ยกเลิก</option>
+                        </select>
+                    </td>
+                </tr>`;
             });
+
             Object.keys(rawUsers).forEach(uk => {
                 const u = rawUsers[uk];
-                adUser.innerHTML += `<tr><td class="p-4">${u.empID}</td><td class="p-4 font-bold">${u.name}</td><td class="p-4">${u.dept}</td><td class="p-4">${u.tel || '-'}</td><td class="p-4">${u.user}</td><td class="p-4"><input type="text" value="${u.pass}" onchange="editUser('${uk}', 'pass', this.value)" class="border px-2 py-1 rounded w-20"></td><td class="p-4 text-center"><button onclick="deleteUser('${uk}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td></tr>`;
+                adUser.innerHTML += `<tr>
+                    <td class="p-4">${u.empID}</td>
+                    <td class="p-4 font-bold">${u.name}</td>
+                    <td class="p-4">${u.dept}</td>
+                    <td class="p-4">${u.tel || '-'}</td>
+                    <td class="p-4">${u.user}</td>
+                    <td class="p-4"><input type="text" value="${u.pass}" onchange="editUser('${uk}', 'pass', this.value)" class="border px-2 py-1 rounded w-20"></td>
+                    <td class="p-4 text-center"><button onclick="deleteUser('${uk}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td>
+                </tr>`;
             });
         };
 
+        // --- ฟังก์ชันเสริม Admin ---
         window.updateStatus = (id, val) => update(ref(db, 'requisitions/' + id), { status: val, managedBy: adminUserSession });
-        window.viewFile = (id) => { const d = rawRequests[id]; if(d && d.fileData) { const nw = window.open(); nw.document.write(`<iframe src="${d.fileData}" frameborder="0" style="width:100%; height:100vh;"></iframe>`); } };
+        window.viewFile = (id) => { 
+            const d = rawRequests[id]; 
+            if(d && d.fileData) { 
+                const nw = window.open(); 
+                nw.document.write(`<iframe src="${d.fileData}" frameborder="0" style="width:100%; height:100vh;"></iframe>`); 
+            } 
+        };
         window.editUser = (id, f, v) => update(ref(db, 'users/' + id), { [f]: v });
-        window.deleteUser = (id) => { if(confirm('ลบสมาชิก?')) remove(ref(db, 'users/' + id)); };
-        window.userCancelReq = (id) => { if(confirm('ยกเลิกใบเบิก?')) update(ref(db, 'requisitions/' + id), { status: "ยกเลิกเอง", managedBy: "USER" }); };
-        window.logout = () => location.reload();
-        window.saveSettings = () => update(ref(db, 'settings'), { systemName: document.getElementById('setSystemName').value, logoUrl: document.getElementById('setLogoUrl').value }).then(() => alert("บันทึกสำเร็จ"));
+        window.deleteUser = (id) => { if(confirm('ต้องการลบสมาชิกรายนี้หรือไม่?')) remove(ref(db, 'users/' + id)); };
+        window.clearAllHistory = () => { if(confirm('ยืนยันล้างประวัติการเบิกทั้งหมด?')) remove(ref(db, 'requisitions')); };
         
+        // --- ฟังก์ชันเสริม User ---
+        window.userCancelReq = (id) => { if(confirm('ยืนยันการยกเลิกใบเบิกนี้?')) update(ref(db, 'requisitions/' + id), { status: "ยกเลิกเอง", managedBy: "USER" }); };
+        window.logout = () => location.reload();
+        window.saveSettings = () => update(ref(db, 'settings'), { systemName: document.getElementById('setSystemName').value, logoUrl: document.getElementById('setLogoUrl').value }).then(() => alert("บันทึกการตั้งค่าสำเร็จ"));
+        
+        // สมัครสมาชิกพนักงาน
         document.getElementById('regForm').onsubmit = (e) => {
             e.preventDefault();
             const u = document.getElementById('regUser').value;
@@ -310,16 +362,18 @@
                 empID: document.getElementById('regEmpID').value, name: document.getElementById('regName').value,
                 dept: document.getElementById('regDept').value, tel: document.getElementById('regTel').value,
                 user: u, pass: document.getElementById('regPass').value
-            }).then(() => { alert("สำเร็จ!"); showPage('loginPage'); });
+            }).then(() => { alert("สมัครสมาชิกสำเร็จ!"); showPage('loginPage'); });
         };
         
+        // จัดการรหัสผ่านพนักงานทั่วไป
         window.openUserPwModal = () => document.getElementById('pwModal').style.display = 'flex';
         window.closeUserPwModal = () => document.getElementById('pwModal').style.display = 'none';
         window.updateUserPassword = () => {
             const p1 = document.getElementById('newPw1').value;
-            if(p1 === document.getElementById('newPw2').value) {
-                update(ref(db, 'users/' + currentUser.user), { pass: p1 }).then(() => { alert("สำเร็จ!"); closeUserPwModal(); });
-            } else alert("รหัสไม่ตรงกัน");
+            const p2 = document.getElementById('newPw2').value;
+            if(p1 && p1 === p2) {
+                update(ref(db, 'users/' + currentUser.user), { pass: p1 }).then(() => { alert("เปลี่ยนรหัสสำเร็จ!"); closeUserPwModal(); });
+            } else alert("รหัสผ่านไม่ตรงกัน หรือยังไม่ได้กรอกข้อมูล");
         };
     </script>
 </body>
