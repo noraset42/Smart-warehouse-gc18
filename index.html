@@ -98,6 +98,7 @@
             </div>
         </nav>
         <div class="p-6 space-y-6 max-w-7xl mx-auto">
+            <!-- ส่วนการตั้งค่า Master Admin (เห็นเฉพาะ role admin) -->
             <div id="adminOnlyPanel" class="space-y-6">
                 <div class="bg-white rounded-3xl shadow-xl p-8 border border-slate-100">
                     <h3 class="font-bold mb-6 flex items-center gap-2 text-slate-800"><i class="fas fa-cog text-indigo-600"></i> ตั้งค่าระบบ</h3>
@@ -122,7 +123,7 @@
         </div>
     </div>
 
-    <!-- [4] หน้าสมัครสมาชิก -->
+    <!-- [4] หน้าสมัครสมาชิก (กู้คืนรายการหน่วยงาน) -->
     <div id="regPage" class="page">
         <div class="min-h-screen flex items-center justify-center bg-slate-900 p-4">
             <div class="max-w-lg w-full bg-white rounded-[2rem] p-10 shadow-2xl">
@@ -132,9 +133,12 @@
                     <input type="text" id="regName" placeholder="ชื่อ-นามสกุล" required class="w-full border-2 p-3 rounded-xl">
                     <select id="regDept" required class="w-full border-2 p-3 rounded-xl bg-white">
                         <option value="" disabled selected>เลือกหน่วยงาน</option>
-                        <option value="PH-MN">PH-MN</option><option value="PH-MN-ICE">PH-MN-ICE</option>
-                        <option value="PH-P2">PH-P2</option><option value="PH-P1">PH-P1</option>
-                        <option value="T-LB-O5">T-LB-O5</option><option value="TP-TA-WM">TP-TA-WM</option>
+                        <option value="PH-MN">PH-MN</option>
+                        <option value="PH-MN-ICE">PH-MN-ICE</option>
+                        <option value="PH-P2">PH-P2</option>
+                        <option value="PH-P1">PH-P1</option>
+                        <option value="T-LB-O5">T-LB-O5</option>
+                        <option value="TP-TA-WM">TP-TA-WM</option>
                     </select>
                     <input type="tel" id="regTel" placeholder="เบอร์โทรศัพท์ (TEL)" required class="w-full border-2 p-3 rounded-xl">
                     <input type="text" id="regUser" placeholder="Username" required class="w-full border-2 p-3 rounded-xl">
@@ -190,20 +194,20 @@
             document.getElementById(id).classList.add('active');
         };
 
-        // --- ระบบ Login ใหม่ (แก้ปัญหาเรื่อง Number/String แล้ว) ---
+        // --- ระบบ Login รองรับ Number/String ---
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
             const u = document.getElementById('logUser').value.trim();
             const p = document.getElementById('logPass').value.trim();
 
             try {
-                // 1. เช็คในกิ่ง admins ก่อน
                 const adminSnap = await get(ref(db, 'admins/' + u));
                 const adminData = adminSnap.val();
 
                 if (adminData && String(adminData.pass) === String(p)) {
                     adminUserSession = u;
                     const role = adminData.role;
+                    // แสดง/ซ่อน แผง Master Admin ตามบทบาท
                     document.getElementById('adminOnlyPanel').classList.toggle('hidden', role === 'staff');
                     document.getElementById('clearHistoryBtn').classList.toggle('hidden', role === 'staff');
                     document.getElementById('adminRoleTitle').innerText = role === 'staff' ? 'Staff Control' : 'Admin Control';
@@ -211,7 +215,6 @@
                     return showPage('adminPage');
                 }
 
-                // 2. ถ้าไม่ใช่ Admin ให้เช็คพนักงานทั่วไป
                 const userSnap = await get(ref(db, 'users/' + u));
                 const user = userSnap.val();
                 if(user && String(user.pass) === String(p)) {
@@ -232,8 +235,8 @@
             const newPass = prompt("ระบุรหัสผ่านใหม่สำหรับ " + adminUserSession + ":");
             if (newPass && newPass.trim().length >= 4) {
                 update(ref(db, 'admins/' + adminUserSession), { pass: newPass.trim() })
-                    .then(() => alert("เปลี่ยนรหัสผ่านถาวรสำเร็จ!"))
-                    .catch((err) => alert("เกิดข้อผิดพลาด"));
+                    .then(() => alert("เปลี่ยนรหัสผ่านสำเร็จ!"))
+                    .catch(() => alert("เกิดข้อผิดพลาด"));
             }
         };
 
