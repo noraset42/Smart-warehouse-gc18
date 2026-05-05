@@ -197,6 +197,7 @@
         let rawRequests = {};
         let rawUsers = {};
 
+        // === รหัสผ่าน Admin แก้ไขที่นี่ (ถาวร) ===
         const ADMIN_ROLES = {
             'admin': { role: 'superadmin', pass: '1234', name: 'SYSTEM ADMIN' },
             '26000946': { role: 'staff', pass: '9999', name: 'CHANA TUAMTED' },
@@ -218,6 +219,7 @@
             document.getElementById('newPw2').value = '';
         };
 
+        // แก้ไข: ฟังก์ชันเปลี่ยนรหัส User ให้จำค่าใหม่ทันที
         window.updateUserPassword = () => {
             const old = document.getElementById('oldPw').value;
             const p1 = document.getElementById('newPw1').value;
@@ -227,7 +229,7 @@
             if(p1 !== p2) return alert("รหัสผ่านใหม่ไม่ตรงกัน!");
             update(ref(db, 'users/' + currentUser.user), { pass: p1 }).then(() => {
                 alert("เปลี่ยนรหัสผ่านสำเร็จ!");
-                currentUser.pass = p1;
+                currentUser.pass = p1; // อัปเดตค่าใน Session
                 closeUserPwModal();
             });
         };
@@ -271,7 +273,7 @@
             const newPass = prompt("ระบุรหัสผ่านใหม่สำหรับ " + adminUserSession + ":");
             if(newPass && newPass.trim() !== "") {
                 ADMIN_ROLES[adminUserSession].pass = newPass;
-                alert("เปลี่ยนรหัสผ่านเรียบร้อยแล้ว");
+                alert("เปลี่ยนรหัสผ่านชั่วคราวสำเร็จ (หากต้องการเปลี่ยนถาวรต้องแจ้งผู้พัฒนาระบบ)");
             }
         };
 
@@ -283,7 +285,7 @@
             reader.onload = (e) => {
                 push(ref(db, 'requisitions'), {
                     user: currentUser.name, 
-                    empID: currentUser.empID, // บันทึกรหัสพนักงานลงในใบเบิก
+                    empID: currentUser.empID,
                     dept: currentUser.dept, 
                     type,
                     note: note || "-",
@@ -305,7 +307,6 @@
             }
         };
 
-        // ฟังการเปลี่ยนแปลงประวัติฝั่ง User พร้อมระบบค้นหา
         function startHistoryListener() {
             const searchInput = document.getElementById('searchUserHist');
             onValue(ref(db, 'requisitions'), (snap) => {
@@ -336,7 +337,6 @@
             searchInput.addEventListener('input', startHistoryListener);
         }
 
-        // ระบบกรองข้อมูลฝั่ง Admin
         const renderAdminTables = () => {
             const reqSearch = document.getElementById('searchReq').value.toLowerCase();
             const userSearch = document.getElementById('searchUser').value.toLowerCase();
