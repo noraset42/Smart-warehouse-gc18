@@ -76,7 +76,6 @@
             <div class="history-card">
                 <div class="history-header">
                     <div class="flex items-center gap-2"><i class="fas fa-history"></i> <span class="font-bold uppercase">ประวัติของคุณ</span></div>
-                    <input type="text" id="searchUserHist" placeholder="🔍 ค้นหา..." class="text-slate-800 px-3 py-1 rounded-lg text-xs outline-none w-40 md:w-64">
                 </div>
                 <div class="overflow-x-auto min-h-[300px]"><table class="w-full text-left"><thead class="bg-slate-50 text-slate-400 text-[10px] uppercase font-bold border-b"><tr><th class="p-5">วัน/เวลา</th><th class="p-5">ประเภท</th><th class="p-5">หมายเหตุ</th><th class="p-5">สถานะ</th><th class="p-5">ผู้ดำเนินการ</th><th class="p-5 text-center">จัดการ</th></tr></thead><tbody id="userHistoryBody" class="divide-y text-sm text-slate-600"></tbody></table></div>
             </div>
@@ -101,29 +100,22 @@
         <div class="p-6 space-y-6 max-w-7xl mx-auto">
             <div id="adminOnlyPanel" class="space-y-6">
                 <div class="bg-white rounded-3xl shadow-xl p-8 border border-slate-100">
-                    <h3 class="font-bold mb-6 flex items-center gap-2 text-slate-800"><i class="fas fa-cog text-indigo-600"></i> ตั้งค่าระบบ (ชื่อ/โลโก้)</h3>
+                    <h3 class="font-bold mb-6 flex items-center gap-2 text-slate-800"><i class="fas fa-cog text-indigo-600"></i> ตั้งค่าระบบ</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <input type="text" id="setSystemName" placeholder="เปลี่ยนชื่อระบบ" class="w-full border p-3 rounded-xl outline-none focus:ring-2 ring-indigo-500 bg-slate-50">
-                        <input type="text" id="setLogoUrl" placeholder="วางลิงก์โลโก้ที่นี่" class="w-full border p-3 rounded-xl outline-none focus:ring-2 ring-indigo-500 bg-slate-50">
-                        <button onclick="saveSettings()" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 shadow-lg">บันทึก</button>
+                        <input type="text" id="setSystemName" placeholder="ชื่อระบบ" class="w-full border p-3 rounded-xl outline-none focus:ring-2 ring-indigo-500">
+                        <input type="text" id="setLogoUrl" placeholder="ลิงก์โลโก้" class="w-full border p-3 rounded-xl outline-none focus:ring-2 ring-indigo-500">
+                        <button onclick="saveSettings()" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold">บันทึก</button>
                     </div>
                 </div>
                 <div class="bg-white rounded-3xl shadow-xl overflow-hidden border">
-                    <div class="p-4 bg-emerald-600 font-bold text-white uppercase text-xs tracking-widest flex justify-between items-center">
-                        <span>ข้อมูลสมาชิก</span>
-                        <input type="text" id="searchUser" placeholder="🔍 ค้นหาสมาชิก..." class="text-slate-800 px-3 py-1 rounded-lg text-[10px] outline-none">
-                    </div>
+                    <div class="p-4 bg-emerald-600 font-bold text-white uppercase text-xs">ข้อมูลสมาชิก</div>
                     <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b font-bold text-slate-500 uppercase"><tr><th class="p-4">รหัสพนักงาน</th><th class="p-4">ชื่อ</th><th class="p-4">หน่วยงาน</th><th class="p-4">TEL</th><th class="p-4">USER</th><th class="p-4">PASS</th><th class="p-4 text-center">ลบ</th></tr></thead><tbody id="adminUserBody" class="divide-y"></tbody></table></div>
                 </div>
             </div>
             <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border">
-                <div class="p-5 bg-indigo-600 font-bold text-white uppercase text-xs tracking-widest flex flex-wrap justify-between items-center gap-4">
-                    <div class="flex items-center gap-4">
-                        <span>รายการใบเบิกทั้งหมด</span>
-                        <span id="staffNotice" class="hidden text-[10px] bg-white/20 px-2 py-1 rounded">Staff Access</span>
-                        <input type="text" id="searchReq" placeholder="🔍 ค้นหาใบเบิก..." class="text-slate-800 px-3 py-1.5 rounded-lg text-[10px] outline-none w-48 md:w-64">
-                    </div>
-                    <button id="clearHistoryBtn" onclick="clearAllHistory()" class="bg-red-500 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-[10px] transition">ล้างประวัติ</button>
+                <div class="p-5 bg-indigo-600 font-bold text-white uppercase text-xs flex justify-between items-center">
+                    <span>รายการใบเบิกทั้งหมด</span>
+                    <button id="clearHistoryBtn" onclick="clearAllHistory()" class="bg-red-500 px-3 py-1.5 rounded-lg text-[10px]">ล้างประวัติ</button>
                 </div>
                 <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b font-bold text-slate-500 uppercase"><tr><th class="p-5">วัน/เวลา</th><th class="p-4">รหัส</th><th class="p-4">ชื่อ</th><th class="p-4">หน่วยงาน</th><th class="p-4">ประเภท</th><th class="p-4">หมายเหตุ</th><th class="p-4">ผู้จัดการ</th><th class="p-4 text-center">สถานะ</th></tr></thead><tbody id="adminReqBody" class="divide-y"></tbody></table></div>
             </div>
@@ -136,17 +128,17 @@
             <div class="max-w-lg w-full bg-white rounded-[2rem] p-10 shadow-2xl">
                 <h2 class="text-2xl font-black mb-6 border-b-4 border-indigo-600 inline-block pb-2">สมัครสมาชิก</h2>
                 <form id="regForm" class="space-y-4 pt-4">
-                    <input type="text" id="regEmpID" placeholder="รหัสพนักงาน" required class="w-full border-2 p-3 rounded-xl outline-none">
-                    <input type="text" id="regName" placeholder="ชื่อ-นามสกุล" required class="w-full border-2 p-3 rounded-xl outline-none">
-                    <select id="regDept" required class="w-full border-2 p-3 rounded-xl outline-none bg-white">
+                    <input type="text" id="regEmpID" placeholder="รหัสพนักงาน" required class="w-full border-2 p-3 rounded-xl">
+                    <input type="text" id="regName" placeholder="ชื่อ-นามสกุล" required class="w-full border-2 p-3 rounded-xl">
+                    <select id="regDept" required class="w-full border-2 p-3 rounded-xl bg-white">
                         <option value="" disabled selected>เลือกหน่วยงาน</option>
                         <option value="PH-MN">PH-MN</option><option value="PH-MN-ICE">PH-MN-ICE</option>
                         <option value="PH-P2">PH-P2</option><option value="PH-P1">PH-P1</option>
                         <option value="T-LB-O5">T-LB-O5</option><option value="TP-TA-WM">TP-TA-WM</option>
                     </select>
-                    <input type="tel" id="regTel" placeholder="เบอร์โทรศัพท์ (TEL)" required class="w-full border-2 p-3 rounded-xl outline-none">
-                    <input type="text" id="regUser" placeholder="Username" required class="w-full border-2 p-3 rounded-xl outline-none">
-                    <input type="password" id="regPass" placeholder="Password" required class="w-full border-2 p-3 rounded-xl outline-none">
+                    <input type="tel" id="regTel" placeholder="เบอร์โทรศัพท์ (TEL)" required class="w-full border-2 p-3 rounded-xl">
+                    <input type="text" id="regUser" placeholder="Username" required class="w-full border-2 p-3 rounded-xl">
+                    <input type="password" id="regPass" placeholder="Password" required class="w-full border-2 p-3 rounded-xl">
                     <div class="flex gap-3 mt-6">
                         <button type="button" onclick="showPage('loginPage')" class="flex-1 bg-slate-100 py-4 rounded-xl font-bold">กลับ</button>
                         <button type="submit" class="flex-[2] bg-indigo-600 text-white py-4 rounded-xl font-bold">ยืนยันสมัคร</button>
@@ -156,13 +148,13 @@
         </div>
     </div>
 
+    <!-- Modal เปลี่ยนรหัสผ่าน User -->
     <div id="pwModal">
         <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full mx-4">
             <h3 class="text-xl font-bold mb-4 text-indigo-700">เปลี่ยนรหัสผ่าน</h3>
             <div class="space-y-4">
-                <input type="password" id="oldPw" placeholder="รหัสผ่านเดิม" class="w-full border p-3 rounded-xl outline-none bg-slate-50">
-                <input type="password" id="newPw1" placeholder="รหัสผ่านใหม่" class="w-full border p-3 rounded-xl outline-none bg-slate-50">
-                <input type="password" id="newPw2" placeholder="ยืนยันรหัสผ่านใหม่" class="w-full border p-3 rounded-xl outline-none bg-slate-50">
+                <input type="password" id="newPw1" placeholder="รหัสผ่านใหม่" class="w-full border p-3 rounded-xl bg-slate-50">
+                <input type="password" id="newPw2" placeholder="ยืนยันรหัสผ่านใหม่" class="w-full border p-3 rounded-xl bg-slate-50">
                 <div class="flex gap-2 pt-2">
                     <button onclick="closeUserPwModal()" class="flex-1 bg-slate-100 py-3 rounded-xl font-bold">ยกเลิก</button>
                     <button onclick="updateUserPassword()" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold">บันทึก</button>
@@ -191,38 +183,30 @@
         let rawRequests = {};
         let rawUsers = {};
 
-        const ADMIN_ROLES = {
-            'admin': { role: 'superadmin', pass: '1234', name: 'SYSTEM ADMIN' },
-            '26000946': { role: 'staff', pass: '9999', name: 'CHANA TUAMTED' },
-            '26000589': { role: 'staff', pass: '9999', name: 'WATSARIN PHAISALRATTANANUKUL' },
-            'z0009675': { role: 'staff', pass: '9999', name: 'SURADACH BOONYAJETSIRI' },
-            'z0011998': { role: 'staff', pass: '9999', name: 'NORASET PHOSRI' }
-        };
-
         window.showPage = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         };
 
-        // --- ระบบ LOGIN แก้ไขใหม่ให้เสถียร ---
+        // --- LOGIN LOGIC (NEW: Check both Admins and Users Node) ---
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
             const u = document.getElementById('logUser').value;
             const p = document.getElementById('logPass').value;
 
-            // 1. เช็ค Staff/Admin ก่อน
-            if (ADMIN_ROLES[u] && ADMIN_ROLES[u].pass === p) {
+            // Check Admin Node first
+            const adminSnap = await get(ref(db, 'admins/' + u));
+            const adminData = adminSnap.val();
+            if (adminData && adminData.pass === p) {
                 adminUserSession = u;
-                const role = ADMIN_ROLES[u].role;
+                const role = adminData.role;
                 document.getElementById('adminOnlyPanel').classList.toggle('hidden', role === 'staff');
-                document.getElementById('staffNotice').classList.toggle('hidden', role !== 'staff');
-                document.getElementById('clearHistoryBtn').classList.toggle('hidden', role !== 'superadmin');
                 document.getElementById('adminRoleTitle').innerText = role === 'staff' ? 'Staff Control' : 'Admin Control';
-                document.getElementById('adminNameDisp').innerText = ADMIN_ROLES[u].name;
+                document.getElementById('adminNameDisp').innerText = adminData.name;
                 return showPage('adminPage');
             }
 
-            // 2. เช็ค User จาก Database
+            // Check User Node
             const userSnap = await get(ref(db, 'users/' + u));
             const user = userSnap.val();
             if(user && user.pass === p) {
@@ -236,46 +220,17 @@
             }
         };
 
-        // --- ระบบตั้งค่า (Logo/Name) ---
-        onValue(ref(db, 'settings'), (snap) => {
-            const s = snap.val();
-            if(s) {
-                if(s.systemName) document.getElementById('sysTitle').innerText = s.systemName;
-                if(s.logoUrl && s.logoUrl.trim() !== "") {
-                    document.getElementById('defaultLogo').classList.add('hidden');
-                    document.getElementById('customLogo').src = s.logoUrl;
-                    document.getElementById('customLogo').classList.remove('hidden');
-                } else {
-                    document.getElementById('defaultLogo').classList.remove('hidden');
-                    document.getElementById('customLogo').classList.add('hidden');
-                }
+        // --- ADMIN PASSWORD CHANGE (PERMANENT) ---
+        window.changeAdminPassword = () => {
+            const newPass = prompt("ระบุรหัสผ่านใหม่สำหรับ " + adminUserSession + ":");
+            if (newPass && newPass.trim().length >= 4) {
+                update(ref(db, 'admins/' + adminUserSession), { pass: newPass })
+                    .then(() => alert("เปลี่ยนรหัสผ่านถาวรสำเร็จ!"))
+                    .catch((err) => alert("เกิดข้อผิดพลาด: " + err.message));
             }
-        });
-
-        window.saveSettings = () => {
-            update(ref(db, 'settings'), { 
-                systemName: document.getElementById('setSystemName').value, 
-                logoUrl: document.getElementById('setLogoUrl').value 
-            }).then(() => alert("บันทึกสำเร็จ"));
         };
 
-        // --- ประวัติฝั่ง User ---
-        function startHistoryListener() {
-            onValue(ref(db, 'requisitions'), (snap) => {
-                const data = snap.val() || {};
-                const uHist = document.getElementById('userHistoryBody');
-                uHist.innerHTML = '';
-                Object.keys(data).reverse().forEach(id => {
-                    const r = data[id];
-                    if(currentUser && r.user === currentUser.name) {
-                        let sClass = r.status === 'สำเร็จ' ? 'status-success' : (r.status === 'ยกเลิก' ? 'status-cancel' : (r.status === 'ยกเลิกเอง' ? 'status-self-cancel' : 'status-pending'));
-                        uHist.innerHTML += `<tr><td class="p-5 text-[10px]">${r.timestamp}</td><td class="p-5 font-bold">${r.type}</td><td class="p-5 text-xs">${r.note}</td><td class="p-5"><span class="status-badge ${sClass}">${r.status}</span></td><td class="p-5 text-[10px]">${r.managedBy || '-'}</td><td class="p-5 text-center">${r.status === 'รอดำเนินการ' ? `<button onclick="userCancelReq('${id}')" class="text-red-500">ยกเลิก</button>` : '-'}</td></tr>`;
-                    }
-                });
-            });
-        }
-
-        // --- ฟังก์ชันอื่นๆ ---
+        // --- USER FUNCTIONS ---
         window.handleUpload = (type, fileId, noteId) => {
             const file = document.getElementById(fileId).files[0];
             if(!file) return alert("เลือกไฟล์ก่อน");
@@ -293,16 +248,37 @@
             reader.readAsDataURL(file);
         };
 
-        window.updateStatus = (id, val) => {
-            const adminName = ADMIN_ROLES[adminUserSession] ? ADMIN_ROLES[adminUserSession].name : "ADMIN";
-            update(ref(db, 'requisitions/' + id), { status: val, managedBy: adminName });
-        };
+        function startHistoryListener() {
+            onValue(ref(db, 'requisitions'), (snap) => {
+                const data = snap.val() || {};
+                const uHist = document.getElementById('userHistoryBody');
+                uHist.innerHTML = '';
+                Object.keys(data).reverse().forEach(id => {
+                    const r = data[id];
+                    if(currentUser && r.user === currentUser.name) {
+                        let sClass = r.status === 'สำเร็จ' ? 'status-success' : (r.status === 'ยกเลิก' ? 'status-cancel' : (r.status === 'ยกเลิกเอง' ? 'status-self-cancel' : 'status-pending'));
+                        uHist.innerHTML += `<tr><td class="p-5 text-[10px]">${r.timestamp}</td><td class="p-5 font-bold">${r.type}</td><td class="p-5 text-xs">${r.note}</td><td class="p-5"><span class="status-badge ${sClass}">${r.status}</span></td><td class="p-5 text-[10px]">${r.managedBy || '-'}</td><td class="p-5 text-center">${r.status === 'รอดำเนินการ' ? `<button onclick="userCancelReq('${id}')" class="text-red-500">ยกเลิก</button>` : '-'}</td></tr>`;
+                    }
+                });
+            });
+        }
 
+        // --- GLOBAL LISTENERS ---
         onValue(ref(db, '/'), (snap) => {
             const data = snap.val() || {};
             rawRequests = data.requisitions || {};
             rawUsers = data.users || {};
             renderAdminTables();
+            // Logo & Title
+            if(data.settings) {
+                const s = data.settings;
+                if(s.systemName) document.getElementById('sysTitle').innerText = s.systemName;
+                if(s.logoUrl && s.logoUrl.trim() !== "") {
+                    document.getElementById('defaultLogo').classList.add('hidden');
+                    document.getElementById('customLogo').src = s.logoUrl;
+                    document.getElementById('customLogo').classList.remove('hidden');
+                }
+            }
         });
 
         const renderAdminTables = () => {
@@ -319,20 +295,20 @@
             });
         };
 
+        window.updateStatus = (id, val) => update(ref(db, 'requisitions/' + id), { status: val, managedBy: adminUserSession });
         window.viewFile = (id) => { const d = rawRequests[id]; if(d && d.fileData) { const nw = window.open(); nw.document.write(`<iframe src="${d.fileData}" frameborder="0" style="width:100%; height:100vh;"></iframe>`); } };
         window.editUser = (id, f, v) => update(ref(db, 'users/' + id), { [f]: v });
         window.deleteUser = (id) => { if(confirm('ลบสมาชิก?')) remove(ref(db, 'users/' + id)); };
         window.userCancelReq = (id) => { if(confirm('ยกเลิกใบเบิก?')) update(ref(db, 'requisitions/' + id), { status: "ยกเลิกเอง", managedBy: "USER" }); };
         window.logout = () => location.reload();
+        window.saveSettings = () => update(ref(db, 'settings'), { systemName: document.getElementById('setSystemName').value, logoUrl: document.getElementById('setLogoUrl').value }).then(() => alert("บันทึกสำเร็จ"));
         
         document.getElementById('regForm').onsubmit = (e) => {
             e.preventDefault();
             const u = document.getElementById('regUser').value;
             set(ref(db, 'users/' + u), {
-                empID: document.getElementById('regEmpID').value,
-                name: document.getElementById('regName').value,
-                dept: document.getElementById('regDept').value,
-                tel: document.getElementById('regTel').value,
+                empID: document.getElementById('regEmpID').value, name: document.getElementById('regName').value,
+                dept: document.getElementById('regDept').value, tel: document.getElementById('regTel').value,
                 user: u, pass: document.getElementById('regPass').value
             }).then(() => { alert("สำเร็จ!"); showPage('loginPage'); });
         };
