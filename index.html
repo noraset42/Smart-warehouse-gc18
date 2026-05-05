@@ -167,7 +167,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, set, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Firebase Configuration (ห้ามลบเด็ดขาด)
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyB5J0CGXQYb2b1IyfICNWnf5eQfNXNeGcw",
             authDomain: "teeorder-11d9d.firebaseapp.com",
@@ -190,54 +190,53 @@
             document.getElementById(id).classList.add('active');
         };
 
-        // --- ระบบ Login ใหม่: เช็คจาก admins node ใน Firebase ---
+        // --- ระบบ Login ใหม่ (แก้ปัญหาเรื่อง Number/String แล้ว) ---
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
-            const u = document.getElementById('logUser').value;
-            const p = document.getElementById('logPass').value;
+            const u = document.getElementById('logUser').value.trim();
+            const p = document.getElementById('logPass').value.trim();
 
-            // 1. ลองเช็คในฐานข้อมูล Admin/Staff ก่อน
-            const adminSnap = await get(ref(db, 'admins/' + u));
-            const adminData = adminSnap.val();
+            try {
+                // 1. เช็คในกิ่ง admins ก่อน
+                const adminSnap = await get(ref(db, 'admins/' + u));
+                const adminData = adminSnap.val();
 
-            if (adminData && adminData.pass === p) {
-                adminUserSession = u;
-                const role = adminData.role;
-                // ถ้าเป็น staff จะซ่อนเมนูตั้งค่าและจัดการสมาชิก
-                document.getElementById('adminOnlyPanel').classList.toggle('hidden', role === 'staff');
-                document.getElementById('clearHistoryBtn').classList.toggle('hidden', role === 'staff');
-                document.getElementById('adminRoleTitle').innerText = role === 'staff' ? 'Staff Control' : 'Admin Control';
-                document.getElementById('adminNameDisp').innerText = adminData.name;
-                return showPage('adminPage');
-            }
+                if (adminData && String(adminData.pass) === String(p)) {
+                    adminUserSession = u;
+                    const role = adminData.role;
+                    document.getElementById('adminOnlyPanel').classList.toggle('hidden', role === 'staff');
+                    document.getElementById('clearHistoryBtn').classList.toggle('hidden', role === 'staff');
+                    document.getElementById('adminRoleTitle').innerText = role === 'staff' ? 'Staff Control' : 'Admin Control';
+                    document.getElementById('adminNameDisp').innerText = adminData.name;
+                    return showPage('adminPage');
+                }
 
-            // 2. ถ้าไม่ใช่ Admin ให้เช็คพนักงานทั่วไป
-            const userSnap = await get(ref(db, 'users/' + u));
-            const user = userSnap.val();
-            if(user && user.pass === p) {
-                currentUser = user;
-                document.getElementById('userDisp').innerText = user.name;
-                document.getElementById('deptDisp').innerText = user.dept;
-                showPage('userPage');
-                startHistoryListener(); 
-            } else {
-                alert("Username หรือ Password ไม่ถูกต้อง!");
+                // 2. ถ้าไม่ใช่ Admin ให้เช็คพนักงานทั่วไป
+                const userSnap = await get(ref(db, 'users/' + u));
+                const user = userSnap.val();
+                if(user && String(user.pass) === String(p)) {
+                    currentUser = user;
+                    document.getElementById('userDisp').innerText = user.name;
+                    document.getElementById('deptDisp').innerText = user.dept;
+                    showPage('userPage');
+                    startHistoryListener(); 
+                } else {
+                    alert("Username หรือ Password ไม่ถูกต้อง!");
+                }
+            } catch (err) {
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล");
             }
         };
 
-        // --- ระบบเปลี่ยนรหัส Admin/Staff ถาวร ---
         window.changeAdminPassword = () => {
             const newPass = prompt("ระบุรหัสผ่านใหม่สำหรับ " + adminUserSession + ":");
             if (newPass && newPass.trim().length >= 4) {
                 update(ref(db, 'admins/' + adminUserSession), { pass: newPass.trim() })
                     .then(() => alert("เปลี่ยนรหัสผ่านถาวรสำเร็จ!"))
-                    .catch((err) => alert("เกิดข้อผิดพลาด: " + err.message));
-            } else if (newPass) {
-                alert("รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร");
+                    .catch((err) => alert("เกิดข้อผิดพลาด"));
             }
         };
 
-        // --- ระบบเบิกของพนักงาน ---
         window.handleUpload = (type, fileId, noteId) => {
             const fileInput = document.getElementById(fileId);
             const file = fileInput.files[0];
@@ -279,13 +278,11 @@
             });
         }
 
-        // --- ระบบดึงข้อมูลสำหรับ Admin/Staff ---
         onValue(ref(db, '/'), (snap) => {
             const data = snap.val() || {};
             rawRequests = data.requisitions || {};
             rawUsers = data.users || {};
             renderAdminTables();
-            // จัดการโลโก้และชื่อระบบ
             if(data.settings) {
                 const s = data.settings;
                 if(s.systemName) document.getElementById('sysTitle').innerText = s.systemName;
@@ -336,7 +333,6 @@
             });
         };
 
-        // --- ฟังก์ชันเสริม Admin ---
         window.updateStatus = (id, val) => update(ref(db, 'requisitions/' + id), { status: val, managedBy: adminUserSession });
         window.viewFile = (id) => { 
             const d = rawRequests[id]; 
@@ -348,13 +344,10 @@
         window.editUser = (id, f, v) => update(ref(db, 'users/' + id), { [f]: v });
         window.deleteUser = (id) => { if(confirm('ต้องการลบสมาชิกรายนี้หรือไม่?')) remove(ref(db, 'users/' + id)); };
         window.clearAllHistory = () => { if(confirm('ยืนยันล้างประวัติการเบิกทั้งหมด?')) remove(ref(db, 'requisitions')); };
-        
-        // --- ฟังก์ชันเสริม User ---
         window.userCancelReq = (id) => { if(confirm('ยืนยันการยกเลิกใบเบิกนี้?')) update(ref(db, 'requisitions/' + id), { status: "ยกเลิกเอง", managedBy: "USER" }); };
         window.logout = () => location.reload();
-        window.saveSettings = () => update(ref(db, 'settings'), { systemName: document.getElementById('setSystemName').value, logoUrl: document.getElementById('setLogoUrl').value }).then(() => alert("บันทึกการตั้งค่าสำเร็จ"));
+        window.saveSettings = () => update(ref(db, 'settings'), { systemName: document.getElementById('setSystemName').value, logoUrl: document.getElementById('setLogoUrl').value }).then(() => alert("บันทึกสำเร็จ"));
         
-        // สมัครสมาชิกพนักงาน
         document.getElementById('regForm').onsubmit = (e) => {
             e.preventDefault();
             const u = document.getElementById('regUser').value;
@@ -365,7 +358,6 @@
             }).then(() => { alert("สมัครสมาชิกสำเร็จ!"); showPage('loginPage'); });
         };
         
-        // จัดการรหัสผ่านพนักงานทั่วไป
         window.openUserPwModal = () => document.getElementById('pwModal').style.display = 'flex';
         window.closeUserPwModal = () => document.getElementById('pwModal').style.display = 'none';
         window.updateUserPassword = () => {
@@ -373,7 +365,7 @@
             const p2 = document.getElementById('newPw2').value;
             if(p1 && p1 === p2) {
                 update(ref(db, 'users/' + currentUser.user), { pass: p1 }).then(() => { alert("เปลี่ยนรหัสสำเร็จ!"); closeUserPwModal(); });
-            } else alert("รหัสผ่านไม่ตรงกัน หรือยังไม่ได้กรอกข้อมูล");
+            } else alert("รหัสผ่านไม่ตรงกัน");
         };
     </script>
 </body>
