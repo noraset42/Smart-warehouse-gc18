@@ -4,22 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS GC18 - ระบบใบเบิกออนไลน์</title>
-    <link rel="icon" type="image/png" href="favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; }
         .page { display: none; }
-        .page.active { display: block; animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .page.active { display: block; }
         .status-badge { padding: 4px 12px; border-radius: 99px; font-weight: bold; font-size: 10px; display: inline-block; }
         .status-pending { background: #fef3c7; color: #92400e; }
         .status-success { background: #dcfce7; color: #166534; }
         .status-cancel { background: #fee2e2; color: #991b1b; }
-        .status-self-cancel { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
-        .history-card { background: white; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-top: 2rem; }
-        .history-header { background: #6366f1; color: white; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
         #pwModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:100; }
     </style>
 </head>
@@ -29,17 +24,14 @@
     <div id="loginPage" class="page active">
         <div class="min-h-screen flex items-center justify-center bg-slate-900 p-4">
             <div class="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-10 text-center border-t-8 border-indigo-600">
-                <div class="mb-8 text-center">
-                    <div id="loginLogoContainer" class="inline-flex items-center justify-center p-4 bg-slate-50 rounded-full mb-4 shadow-inner min-w-[120px] min-h-[120px]">
-                        <i id="defaultLogo" class="fas fa-warehouse text-5xl text-indigo-700"></i>
-                        <img id="customLogo" src="" class="hidden max-w-[100px] max-h-[100px] object-contain">
-                    </div>
-                    <h2 id="sysTitle" class="text-2xl font-black text-slate-800 uppercase tracking-tighter">Warehouse System</h2>
+                <div class="mb-8">
+                    <i class="fas fa-warehouse text-5xl text-indigo-700 mb-4"></i>
+                    <h2 class="text-2xl font-black text-slate-800 uppercase">Warehouse GC18</h2>
                 </div>
                 <form id="loginForm" class="space-y-4">
                     <input type="text" id="logUser" placeholder="Username" required class="w-full px-4 py-3 border rounded-2xl outline-none focus:ring-2 ring-indigo-500 bg-slate-50">
                     <input type="password" id="logPass" placeholder="Password" required class="w-full px-4 py-3 border rounded-2xl outline-none focus:ring-2 ring-indigo-500 bg-slate-50">
-                    <button type="submit" class="w-full bg-indigo-700 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 transition shadow-lg uppercase">เข้าสู่ระบบ</button>
+                    <button type="submit" class="w-full bg-indigo-700 text-white font-bold py-4 rounded-2xl hover:bg-slate-800 transition">เข้าสู่ระบบ</button>
                     <p class="mt-6 text-sm text-gray-500">ยังไม่มีบัญชี? <a href="javascript:showPage('regPage')" class="text-indigo-600 font-bold underline">สมัครสมาชิก</a></p>
                 </form>
             </div>
@@ -48,86 +40,49 @@
 
     <!-- [2] หน้าพนักงาน -->
     <div id="userPage" class="page">
-        <nav class="bg-slate-900 text-white p-4 flex justify-between px-8 shadow-xl">
+        <nav class="bg-slate-900 text-white p-4 flex justify-between px-8">
             <div class="flex items-center gap-3">
                 <div class="bg-indigo-600 p-2 rounded-lg"><i class="fas fa-user text-white"></i></div>
-                <div><div class="font-bold leading-tight text-indigo-400" id="userDisp"></div><div class="text-[10px] text-slate-400 uppercase tracking-widest" id="deptDisp"></div></div>
+                <div><div class="font-bold" id="userDisp"></div><div class="text-[10px] text-slate-400" id="deptDisp"></div></div>
             </div>
-            <div class="flex gap-2">
-                <button onclick="openUserPwModal()" class="text-[10px] bg-slate-700 px-3 py-1 rounded-full font-bold hover:bg-slate-600 transition border border-slate-500"><i class="fas fa-key mr-1"></i> เปลี่ยนรหัส</button>
-                <button onclick="logout()" class="bg-red-500 text-white px-4 py-1 rounded-full text-xs font-bold hover:bg-red-600 transition">Logout</button>
-            </div>
+            <button onclick="logout()" class="bg-red-500 text-white px-4 py-1 rounded-full text-xs font-bold">Logout</button>
         </nav>
         <div class="container mx-auto p-6 max-w-5xl">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-[2rem] shadow-xl border-b-4 border-indigo-600 text-center">
-                    <h3 class="font-black text-lg mb-4 text-slate-800 uppercase">Spare Part</h3>
+                <div class="bg-white p-6 rounded-[2rem] shadow-xl border-b-4 border-indigo-600">
+                    <h3 class="font-black text-lg mb-4">Spare Part</h3>
                     <input type="file" id="spareFile" class="text-xs mb-3 block w-full border-2 border-dashed p-3 rounded-xl">
-                    <input type="text" id="spareNote" placeholder="ระบุรายละเอียดเพิ่มเติม / วันที่ใช้งาน" class="w-full border p-2 mb-4 rounded-xl text-sm outline-none focus:ring-2 ring-indigo-500">
-                    <button onclick="handleUpload('Spare Part', 'spareFile', 'spareNote')" class="w-full bg-indigo-600 text-white py-3 rounded-2xl font-bold hover:bg-slate-800 transition shadow-lg">ส่งใบเบิกอะไหล่</button>
+                    <input type="text" id="spareNote" placeholder="รายละเอียดเพิ่มเติม" class="w-full border p-2 mb-4 rounded-xl text-sm">
+                    <button onclick="handleUpload('Spare Part', 'spareFile', 'spareNote')" class="w-full bg-indigo-600 text-white py-3 rounded-2xl font-bold">ส่งใบเบิกอะไหล่</button>
                 </div>
-                <div class="bg-white p-6 rounded-[2rem] shadow-xl border-b-4 border-orange-500 text-center">
-                    <h3 class="font-black text-lg mb-4 text-slate-800 uppercase">PPE</h3>
+                <div class="bg-white p-6 rounded-[2rem] shadow-xl border-b-4 border-orange-500">
+                    <h3 class="font-black text-lg mb-4">PPE</h3>
                     <input type="file" id="ppeFile" class="text-xs mb-3 block w-full border-2 border-dashed p-3 rounded-xl">
-                    <input type="text" id="ppeNote" placeholder="ระบุรายละเอียดเพิ่มเติม / วันที่ใช้งาน" class="w-full border p-2 mb-4 rounded-xl text-sm outline-none focus:ring-2 ring-orange-500">
-                    <button onclick="handleUpload('PPE', 'ppeFile', 'ppeNote')" class="w-full bg-orange-500 text-white py-3 rounded-2xl font-bold hover:bg-slate-800 transition shadow-lg">ส่งใบเบิก PPE</button>
+                    <input type="text" id="ppeNote" placeholder="รายละเอียดเพิ่มเติม" class="w-full border p-2 mb-4 rounded-xl text-sm">
+                    <button onclick="handleUpload('PPE', 'ppeFile', 'ppeNote')" class="w-full bg-orange-500 text-white py-3 rounded-2xl font-bold">ส่งใบเบิก PPE</button>
                 </div>
             </div>
-            <div class="history-card">
-                <div class="history-header">
-                    <div class="flex items-center gap-2"><i class="fas fa-history"></i> <span class="font-bold uppercase">ประวัติการเบิกของคุณ</span></div>
-                    <input type="text" id="searchUserHist" placeholder="🔍 ค้นหาประวัติ..." class="text-slate-800 px-3 py-1 rounded-lg text-xs outline-none w-40 md:w-64">
-                </div>
-                <div class="overflow-x-auto min-h-[300px]"><table class="w-full text-left"><thead class="bg-slate-50 text-slate-400 text-[10px] uppercase font-bold border-b"><tr><th class="p-5">วัน/เวลา</th><th class="p-5">ประเภท</th><th class="p-5">หมายเหตุ</th><th class="p-5">สถานะ</th><th class="p-5">ผู้ดำเนินการ</th><th class="p-5 text-center">จัดการ</th></tr></thead><tbody id="userHistoryBody" class="divide-y text-sm text-slate-600"></tbody></table></div>
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+                <div class="bg-indigo-600 p-4 text-white font-bold">ประวัติการเบิกของคุณ</div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 border-b"><tr><th class="p-4">วัน/เวลา</th><th class="p-4">ประเภท</th><th class="p-4">สถานะ</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody id="userHistoryBody"></tbody></table></div>
             </div>
         </div>
     </div>
 
-    <!-- [3] หน้า Admin / Staff -->
+    <!-- [3] หน้า Admin -->
     <div id="adminPage" class="page">
-        <nav class="bg-slate-900 text-white p-4 flex justify-between px-8 border-b-4 border-indigo-600 shadow-2xl">
-            <div class="flex items-center gap-3">
-                <i class="fas fa-user-shield text-indigo-500 text-xl"></i>
-                <div>
-                    <div class="font-black italic uppercase text-sm" id="adminRoleTitle">Admin Control</div>
-                    <div class="text-[10px] text-slate-400" id="adminNameDisp"></div>
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="openUserPwModal()" class="text-[10px] bg-slate-700 px-3 py-2 rounded-full font-bold hover:bg-slate-600 transition border border-slate-500"><i class="fas fa-key mr-1"></i> เปลี่ยนรหัส</button>
-                <button onclick="logout()" class="text-xs bg-red-600 px-5 py-2 rounded-full font-bold hover:bg-red-700 transition">Logout</button>
-            </div>
+        <nav class="bg-slate-900 text-white p-4 flex justify-between px-8 border-b-4 border-indigo-600">
+            <div class="font-black italic" id="adminRoleTitle">ADMIN CONTROL</div>
+            <button onclick="logout()" class="text-xs bg-red-600 px-5 py-2 rounded-full font-bold">Logout</button>
         </nav>
-        <div class="p-6 space-y-6 max-w-7xl mx-auto">
-            <div id="adminOnlyPanel" class="space-y-6">
-                <div class="bg-white rounded-3xl shadow-xl p-8 border border-slate-100">
-                    <h3 class="font-bold mb-6 flex items-center gap-2 text-slate-800"><i class="fas fa-cog text-indigo-600"></i> 1. ตั้งค่าระบบ (ชื่อ/โลโก้)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <input type="text" id="setSystemName" placeholder="เปลี่ยนชื่อระบบ" class="w-full border p-3 rounded-xl outline-none focus:ring-2 ring-indigo-500 bg-slate-50">
-                        <input type="text" id="setLogoUrl" placeholder="วางลิงก์โลโก้ที่นี่" class="w-full border p-3 rounded-xl outline-none focus:ring-2 ring-indigo-500 bg-slate-50">
-                        <button onclick="saveSettings()" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 shadow-lg">บันทึกการตั้งค่า</button>
-                    </div>
-                </div>
-                <div class="bg-white rounded-3xl shadow-xl overflow-hidden border">
-                    <div class="p-4 bg-emerald-600 font-bold text-white uppercase text-xs tracking-widest flex justify-between items-center">
-                        <span>2. ข้อมูลสมาชิก</span>
-                        <input type="text" id="searchUser" placeholder="🔍 ค้นหาสมาชิก..." class="text-slate-800 px-3 py-1 rounded-lg text-[10px] outline-none focus:ring-2 ring-white">
-                    </div>
-                    <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b font-bold text-slate-500 uppercase"><tr><th class="p-4">รหัสพนักงาน</th><th class="p-4">ชื่อ</th><th class="p-4">หน่วยงาน</th><th class="p-4">TEL</th><th class="p-4">USER</th><th class="p-4">PASS</th><th class="p-4 text-center">ลบ</th></tr></thead><tbody id="adminUserBody" class="divide-y"></tbody></table></div>
-                </div>
+        <div class="p-6 space-y-6">
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border">
+                <div class="p-4 bg-emerald-600 font-bold text-white uppercase text-xs">ข้อมูลสมาชิก</div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b"><tr><th class="p-4">รหัสพนักงาน</th><th class="p-4">ชื่อ</th><th class="p-4">หน่วยงาน</th><th class="p-4">USER</th><th class="p-4">PASS</th><th class="p-4 text-center">ลบ</th></tr></thead><tbody id="adminUserBody"></tbody></table></div>
             </div>
             <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border">
-                <div class="p-5 bg-indigo-600 font-bold text-white uppercase text-xs tracking-widest flex flex-wrap justify-between items-center gap-4">
-                    <div class="flex items-center gap-4">
-                        <span>รายการใบเบิกทั้งหมด</span>
-                        <span id="staffNotice" class="hidden text-[10px] bg-white/20 px-2 py-1 rounded">สิทธิ์ผู้ดูแลรายการ</span>
-                        <input type="text" id="searchReq" placeholder="🔍 ค้นหาใบเบิก (ชื่อ/รหัส/แผนก)..." class="text-slate-800 px-3 py-1.5 rounded-lg text-[10px] outline-none focus:ring-2 ring-white w-48 md:w-64">
-                    </div>
-                    <button id="clearHistoryBtn" onclick="clearAllHistory()" class="bg-red-500 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-[10px] transition shadow-md">
-                        <i class="fas fa-trash-alt mr-1"></i> ล้างประวัติใบเบิกทั้งหมด
-                    </button>
-                </div>
-                <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b font-bold text-slate-500 uppercase"><tr><th class="p-5">วัน/เวลา</th><th class="p-4">รหัสพนักงาน</th><th class="p-4">ชื่อ</th><th class="p-4">หน่วยงาน</th><th class="p-4">ประเภท</th><th class="p-4">หมายเหตุ</th><th class="p-4">ผู้จัดการล่าสุด</th><th class="p-4 text-center">จัดการสถานะ</th></tr></thead><tbody id="adminReqBody" class="divide-y"></tbody></table></div>
+                <div class="p-5 bg-indigo-600 font-bold text-white uppercase text-xs">รายการใบเบิกทั้งหมด</div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b"><tr><th class="p-5">วัน/เวลา</th><th class="p-4">ชื่อ</th><th class="p-4">ประเภท</th><th class="p-4">ผู้จัดการ</th><th class="p-4 text-center">จัดการสถานะ</th></tr></thead><tbody id="adminReqBody"></tbody></table></div>
             </div>
         </div>
     </div>
@@ -136,50 +91,25 @@
     <div id="regPage" class="page">
         <div class="min-h-screen flex items-center justify-center bg-slate-900 p-4">
             <div class="max-w-lg w-full bg-white rounded-[2rem] p-10 shadow-2xl">
-                <h2 class="text-2xl font-black mb-6 border-b-4 border-indigo-600 inline-block pb-2">สมัครสมาชิก</h2>
-                <form id="regForm" class="space-y-4 pt-4">
-                    <input type="text" id="regEmpID" placeholder="รหัสพนักงาน" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
-                    <input type="text" id="regName" placeholder="ชื่อ-นามสกุล" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
-                    <select id="regDept" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500 bg-white">
-                        <option value="" disabled selected>เลือกหน่วยงาน</option>
-                        <option value="PH-MN">PH-MN</option><option value="PH-MN-ICE">PH-MN-ICE</option><option value="PH-MN-RA">PH-MN-RA</option><option value="PH-MN-MM">PH-MN-MM</option>
-                        <option value="PH-P2">PH-P2</option><option value="PH-P2-AU">PH-P2-AU</option><option value="PH-P2-TE">PH-P2-TE</option><option value="PH-P2-OP">PH-P2-OP</option><option value="PH-P2-LO">PH-P2-LO</option>
-                        <option value="PH-P1">PH-P1</option><option value="PH-P1-AU">PH-P1-AU</option><option value="PH-P1-OP">PH-P1-OP</option><option value="PH-P1-TE">PH-P1-TE</option>
-                        <option value="T-LB-O5">T-LB-O5</option><option value="T-II-CM">T-II-CM</option><option value="T-PI-C2">T-PI-C2</option><option value="T-II-IP1">T-II-IP1</option>
-                        <option value="TP-TA-WM">TP-TA-WM</option><option value="Q-SH-PH">Q-SH-PH</option><option value="Q-SH-CM">Q-SH-CM</option><option value="PH-PH-PP">PH-PH-PP</option>
-                        <option value="H-BP1-COB">H-BP1-COB</option><option value="H-GA-PS">H-GA-PS</option><option value="TP-TA-IM">TP-TA-IM</option>
-                    </select>
-                    <input type="tel" id="regTel" placeholder="เบอร์โทรศัพท์ (TEL)" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
-                    <input type="text" id="regUser" placeholder="Username" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
-                    <input type="password" id="regPass" placeholder="Password" required class="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500">
+                <h2 class="text-2xl font-black mb-6">สมัครสมาชิก</h2>
+                <form id="regForm" class="space-y-4">
+                    <input type="text" id="regEmpID" placeholder="รหัสพนักงาน" required class="w-full border-2 p-3 rounded-xl outline-none">
+                    <input type="text" id="regName" placeholder="ชื่อ-นามสกุล" required class="w-full border-2 p-3 rounded-xl outline-none">
+                    <input type="text" id="regDept" placeholder="หน่วยงาน" required class="w-full border-2 p-3 rounded-xl outline-none">
+                    <input type="text" id="regUser" placeholder="Username" required class="w-full border-2 p-3 rounded-xl outline-none">
+                    <input type="password" id="regPass" placeholder="Password" required class="w-full border-2 p-3 rounded-xl outline-none">
                     <div class="flex gap-3 mt-6">
                         <button type="button" onclick="showPage('loginPage')" class="flex-1 bg-slate-100 py-4 rounded-xl font-bold">กลับ</button>
-                        <button type="submit" class="flex-[2] bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition">ยืนยันสมัคร</button>
+                        <button type="submit" class="flex-[2] bg-indigo-600 text-white py-4 rounded-xl font-bold">สมัครสมาชิก</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- [Modal เปลี่ยนรหัสผ่าน] -->
-    <div id="pwModal">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full mx-4">
-            <h3 class="text-xl font-bold mb-4 text-indigo-700"><i class="fas fa-key mr-2"></i>เปลี่ยนรหัสผ่าน</h3>
-            <div class="space-y-4">
-                <input type="password" id="oldPw" placeholder="รหัสผ่านเดิม" class="w-full border p-3 rounded-xl outline-none focus:ring-2 ring-indigo-500 bg-slate-50">
-                <input type="password" id="newPw1" placeholder="รหัสผ่านใหม่" class="w-full border p-3 rounded-xl outline-none focus:ring-2 ring-indigo-500 bg-slate-50">
-                <input type="password" id="newPw2" placeholder="ยืนยันรหัสผ่านใหม่" class="w-full border p-3 rounded-xl outline-none focus:ring-2 ring-indigo-500 bg-slate-50">
-                <div class="flex gap-2 pt-2">
-                    <button onclick="closeUserPwModal()" class="flex-1 bg-slate-100 py-3 rounded-xl font-bold">ยกเลิก</button>
-                    <button onclick="updateUserPassword()" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold">บันทึก</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, push, set, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, push, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB5J0CGXQYb2b1IyfICNWnf5eQfNXNeGcw",
@@ -194,11 +124,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         let currentUser = null;
-        let adminUserSession = null;
+        let adminName = "";
         let rawRequests = {};
         let rawUsers = {};
 
-        // รายชื่อ Admin/Staff (ดึงรหัสผ่านจาก DB จริง)
+        // รายชื่อ Admin/Staff
         const ADMIN_LIST = ['admin', '26000946', '26000589', 'z0009675', 'z0011998'];
 
         window.showPage = (id) => {
@@ -206,32 +136,30 @@
             document.getElementById(id).classList.add('active');
         };
 
-        // --- ระบบ Login (แก้ให้ Staff ดึงรหัสจาก DB) ---
-        document.getElementById('loginForm').onsubmit = async (e) => {
+        // --- ระบบ Login (เช็คจาก Database เป็นหลัก) ---
+        document.getElementById('loginForm').onsubmit = (e) => {
             e.preventDefault();
             const u = document.getElementById('logUser').value;
             const p = document.getElementById('logPass').value;
 
-            // 1. กรณีเป็น superadmin (admin หลักที่ไม่ได้อยู่ในตาราง user)
+            // 1. เช็ค Super Admin (ล็อกรหัส)
             if (u === 'admin' && p === '1234') {
-                adminUserSession = u;
-                setupAdminUI('superadmin', 'SYSTEM ADMIN');
+                adminName = "SYSTEM ADMIN";
+                document.getElementById('adminRoleTitle').innerText = "ADMIN CONTROL";
                 return showPage('adminPage');
             }
 
-            // 2. ตรวจสอบจากฐานข้อมูล (สำหรับ Staff และ User)
-            const snapshot = await get(ref(db, 'users/' + u));
-            const userData = snapshot.val();
-
-            if (userData && userData.pass === p) {
+            // 2. เช็คจากฐานข้อมูล
+            const userInDB = rawUsers[u];
+            if (userInDB && userInDB.pass === p) {
                 if (ADMIN_LIST.includes(u)) {
-                    adminUserSession = u;
-                    setupAdminUI('staff', userData.name);
+                    adminName = userInDB.name;
+                    document.getElementById('adminRoleTitle').innerText = "STAFF CONTROL (" + adminName + ")";
                     showPage('adminPage');
                 } else {
-                    currentUser = userData;
-                    document.getElementById('userDisp').innerText = userData.name;
-                    document.getElementById('deptDisp').innerText = userData.dept;
+                    currentUser = userInDB;
+                    document.getElementById('userDisp').innerText = userInDB.name;
+                    document.getElementById('deptDisp').innerText = userInDB.dept;
                     showPage('userPage');
                     startHistoryListener();
                 }
@@ -240,52 +168,19 @@
             }
         };
 
-        function setupAdminUI(role, name) {
-            document.getElementById('adminOnlyPanel').classList.toggle('hidden', role === 'staff');
-            document.getElementById('staffNotice').classList.toggle('hidden', role !== 'staff');
-            document.getElementById('clearHistoryBtn').classList.toggle('hidden', role !== 'superadmin');
-            document.getElementById('adminRoleTitle').innerText = role === 'staff' ? 'Staff Control' : 'Admin Control';
-            document.getElementById('adminNameDisp').innerText = name;
-        }
-
-        // --- เปลี่ยนรหัสผ่าน ---
-        window.openUserPwModal = () => document.getElementById('pwModal').style.display = 'flex';
-        window.closeUserPwModal = () => {
-            document.getElementById('pwModal').style.display = 'none';
-        };
-
-        window.updateUserPassword = async () => {
-            const old = document.getElementById('oldPw').value;
-            const p1 = document.getElementById('newPw1').value;
-            const p2 = document.getElementById('newPw2').value;
-            
-            const userId = currentUser ? currentUser.user : adminUserSession;
-            const snap = await get(ref(db, 'users/' + userId));
-            const realData = snap.val();
-
-            if(userId !== 'admin' && realData.pass !== old) return alert("รหัสผ่านเดิมไม่ถูกต้อง!");
-            if(p1.length < 4) return alert("รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัวอักษร");
-            if(p1 !== p2) return alert("รหัสผ่านใหม่ไม่ตรงกัน!");
-
-            update(ref(db, 'users/' + userId), { pass: p1 }).then(() => {
-                alert("เปลี่ยนรหัสผ่านสำเร็จ! กรุณาเข้าสู่ระบบใหม่");
-                logout();
-            });
-        };
-
-        // --- ส่วนจัดการข้อมูล ---
+        // --- ระบบจัดการข้อมูล ---
         window.handleUpload = (type, fileId, noteId) => {
             const file = document.getElementById(fileId).files[0];
-            const note = document.getElementById(noteId).value;
             if(!file) return alert("เลือกไฟล์ก่อน");
             const reader = new FileReader();
             reader.onload = (e) => {
                 push(ref(db, 'requisitions'), {
                     user: currentUser.name, empID: currentUser.empID, dept: currentUser.dept,
-                    type, note: note || "-", fileName: file.name, fileData: e.target.result,
-                    status: "รอดำเนินการ", timestamp: new Date().toLocaleString('th-TH'), managedBy: ""
+                    type, note: document.getElementById(noteId).value || "-",
+                    fileData: e.target.result, status: "รอดำเนินการ",
+                    timestamp: new Date().toLocaleString('th-TH'), managedBy: ""
                 });
-                alert("ส่งใบเบิกสำเร็จ!");
+                alert("ส่งสำเร็จ!");
                 document.getElementById(fileId).value = ''; document.getElementById(noteId).value = '';
             };
             reader.readAsDataURL(file);
@@ -299,31 +194,26 @@
                 Object.keys(data).reverse().forEach(id => {
                     const r = data[id];
                     if(currentUser && r.empID === currentUser.empID) {
-                        let sClass = r.status === 'สำเร็จ' ? 'status-success' : (r.status === 'ยกเลิก' ? 'status-cancel' : (r.status === 'ยกเลิกเอง' ? 'status-self-cancel' : 'status-pending'));
-                        uHist.innerHTML += `<tr><td class="p-5 text-xs">${r.timestamp}</td><td class="p-5 font-bold">${r.type}</td><td class="p-5 text-xs text-indigo-600">${r.note}</td><td class="p-5"><span class="status-badge ${sClass}">${r.status}</span></td><td class="p-5 text-[10px]">${r.managedBy || '-'}</td><td class="p-5 text-center">${r.status === 'รอดำเนินการ' ? `<button onclick="userCancelReq('${id}')" class="text-red-500 font-bold">ยกเลิก</button>` : '-'}</td></tr>`;
+                        let sClass = r.status === 'สำเร็จ' ? 'status-success' : (r.status === 'ยกเลิก' ? 'status-cancel' : 'status-pending');
+                        uHist.innerHTML += `<tr><td class="p-4">${r.timestamp}</td><td class="p-4 font-bold">${r.type}</td><td class="p-4"><span class="status-badge ${sClass}">${r.status}</span></td><td class="p-4 text-center">${r.status === 'รอดำเนินการ' ? `<button onclick="deleteReq('${id}')" class="text-red-500">ยกเลิก</button>` : '-'}</td></tr>`;
                     }
                 });
             });
         }
 
-        window.renderAdminTables = () => {
+        const renderAdminTables = () => {
             const adReq = document.getElementById('adminReqBody');
             const adUser = document.getElementById('adminUserBody');
-            const reqSearch = document.getElementById('searchReq').value.toLowerCase();
-            const userSearch = document.getElementById('searchUser').value.toLowerCase();
-            
             adReq.innerHTML = ''; adUser.innerHTML = '';
+            
             Object.keys(rawRequests).reverse().forEach(id => {
                 const r = rawRequests[id];
-                if(`${r.user} ${r.empID} ${r.dept} ${r.note}`.toLowerCase().includes(reqSearch)) {
-                    adReq.innerHTML += `<tr><td class="p-4 text-[10px]">${r.timestamp}</td><td class="p-4 font-bold text-indigo-600">${r.empID}</td><td class="p-4">${r.user}</td><td class="p-4">${r.dept}</td><td class="p-4"><button onclick="viewFile('${id}')" class="text-indigo-600 font-bold hover:underline">${r.type}</button></td><td class="p-4 text-xs">${r.note}</td><td class="p-4 text-emerald-600 font-bold">${r.managedBy || '-'}</td><td class="p-4 text-center"><select onchange="updateStatus('${id}', this.value)" class="text-xs border rounded p-1"><option value="รอดำเนินการ" ${r.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option><option value="สำเร็จ" ${r.status==='สำเร็จ'?'selected':''}>สำเร็จ</option><option value="ยกเลิก" ${r.status==='ยกเลิก'?'selected':''}>ยกเลิก</option><option value="ยกเลิกเอง" ${r.status==='ยกเลิกเอง'?'selected':''}>ยกเลิกเอง</option></select></td></tr>`;
-                }
+                adReq.innerHTML += `<tr><td class="p-4">${r.timestamp}</td><td class="p-4">${r.user}</td><td class="p-4"><button onclick="viewFile('${id}')" class="text-indigo-600 underline">${r.type}</button></td><td class="p-4">${r.managedBy || '-'}</td><td class="p-4 text-center"><select onchange="updateStatus('${id}', this.value)" class="text-xs border rounded p-1"><option value="รอดำเนินการ" ${r.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option><option value="สำเร็จ" ${r.status==='สำเร็จ'?'selected':''}>สำเร็จ</option><option value="ยกเลิก" ${r.status==='ยกเลิก'?'selected':''}>ยกเลิก</option></select></td></tr>`;
             });
+
             Object.keys(rawUsers).forEach(uk => {
                 const u = rawUsers[uk];
-                if(`${u.name} ${u.empID} ${u.user}`.toLowerCase().includes(userSearch)) {
-                    adUser.innerHTML += `<tr><td class="p-4">${u.empID}</td><td class="p-4 font-bold">${u.name}</td><td class="p-4">${u.dept}</td><td class="p-4">${u.tel}</td><td class="p-4 text-indigo-600">${u.user}</td><td class="p-4"><input type="text" value="${u.pass}" onchange="editUser('${uk}', 'pass', this.value)" class="border px-2 py-1 rounded w-24"></td><td class="p-4 text-center"><button onclick="deleteUser('${uk}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td></tr>`;
-                }
+                adUser.innerHTML += `<tr><td class="p-4">${u.empID}</td><td class="p-4 font-bold">${u.name}</td><td class="p-4">${u.dept}</td><td class="p-4">${u.user}</td><td class="p-4"><input type="text" value="${u.pass}" onchange="editUser('${uk}', 'pass', this.value)" class="border px-2 py-1 rounded w-24"></td><td class="p-4 text-center"><button onclick="deleteUser('${uk}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td></tr>`;
             });
         };
 
@@ -334,25 +224,11 @@
             renderAdminTables();
         });
 
-        document.getElementById('searchReq').addEventListener('input', renderAdminTables);
-        document.getElementById('searchUser').addEventListener('input', renderAdminTables);
-
-        onValue(ref(db, 'settings'), (snap) => {
-            const s = snap.val();
-            if(s) {
-                if(s.systemName) document.getElementById('sysTitle').innerText = s.systemName;
-                if(s.logoUrl) { document.getElementById('defaultLogo').classList.add('hidden'); document.getElementById('customLogo').src = s.logoUrl; document.getElementById('customLogo').classList.remove('hidden'); }
-            }
-        });
-
-        window.viewFile = (id) => { onValue(ref(db, 'requisitions/' + id), (snap) => { const d = snap.val(); if(d && d.fileData) { const nw = window.open(); nw.document.write(`<iframe src="${d.fileData}" frameborder="0" style="width:100%; height:100vh;"></iframe>`); } }, { onlyOnce: true }); };
-        window.updateStatus = (id, val) => {
-            const adminName = document.getElementById('adminNameDisp').innerText;
-            update(ref(db, 'requisitions/' + id), { status: val, managedBy: adminName });
-        };
+        window.viewFile = (id) => { const d = rawRequests[id]; if(d && d.fileData) { const nw = window.open(); nw.document.write(`<iframe src="${d.fileData}" frameborder="0" style="width:100%; height:100vh;"></iframe>`); } };
+        window.updateStatus = (id, val) => update(ref(db, 'requisitions/' + id), { status: val, managedBy: adminName });
         window.editUser = (id, f, v) => update(ref(db, 'users/' + id), { [f]: v });
         window.deleteUser = (id) => { if(confirm('ลบสมาชิก?')) remove(ref(db, 'users/' + id)); };
-        window.saveSettings = () => { update(ref(db, 'settings'), { systemName: document.getElementById('setSystemName').value, logoUrl: document.getElementById('setLogoUrl').value }).then(() => alert("บันทึกสำเร็จ")); };
+        window.deleteReq = (id) => { if(confirm('ยกเลิกใบเบิก?')) remove(ref(db, 'requisitions/' + id)); };
         window.logout = () => { location.reload(); };
 
         document.getElementById('regForm').onsubmit = (e) => {
@@ -362,9 +238,8 @@
                 empID: document.getElementById('regEmpID').value,
                 name: document.getElementById('regName').value,
                 dept: document.getElementById('regDept').value,
-                tel: document.getElementById('regTel').value,
                 user: u, pass: document.getElementById('regPass').value
-            }).then(() => { alert("สมัครสมาชิกสำเร็จ!"); showPage('loginPage'); });
+            }).then(() => { alert("สำเร็จ!"); showPage('loginPage'); });
         };
     </script>
 </body>
