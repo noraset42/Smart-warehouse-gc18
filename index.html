@@ -309,7 +309,14 @@
             });
         };
 
-        window.updateStatus = (id, val) => update(ref(db, 'requisitions/' + id), { status: val, managedBy: adminUserSession });
+        window.updateStatus = (id, val) => {
+    // ดึงชื่อจากหน้าจอที่แสดงชื่อ Admin อยู่ (adminNameDisp)
+    const adminFullName = document.getElementById('adminNameDisp').innerText;
+    update(ref(db, 'requisitions/' + id), { 
+        status: val, 
+        managedBy: adminFullName 
+    });
+};
         window.viewFile = (id) => { const d = rawRequests[id]; if(d && d.fileData) { const nw = window.open(); nw.document.write(`<iframe src="${d.fileData}" frameborder="0" style="width:100%; height:100vh;"></iframe>`); } };
         window.editUser = (id, f, v) => update(ref(db, 'users/' + id), { [f]: v });
         window.deleteUser = (id) => { if(confirm('ลบสมาชิก?')) remove(ref(db, 'users/' + id)); };
