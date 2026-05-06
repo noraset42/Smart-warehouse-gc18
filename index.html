@@ -227,20 +227,28 @@
             document.getElementById(id).classList.add('active');
         };
 
-        // ฟังก์ชันส่งเมลผ่าน EmailJS
-        const sendEmailNotification = (data) => {
-            emailjs.send("service_z62bb85", "template_lcnyrga", {
-                user_name: data.user,
-                emp_id: data.empID,
-                dept: data.dept,
-                type: data.type,
-                note: data.note,
-                status: data.status,
-                timestamp: data.timestamp,
-                managed_by: data.managedBy || "ยังไม่มี"
-            }).then(() => console.log("Email Sent"), (err) => console.log("Email Error: ", err));
-        };
+       // ฟังก์ชันส่งเมลผ่าน EmailJS
+const sendEmailNotification = (data) => {
+    console.log("Starting to send email with data:", data); // เพิ่ม log เพื่อเช็คว่าฟังก์ชันถูกเรียกไหม
 
+    emailjs.send("service_z62bb85", "template_lcnyrga", {
+        user_name: data.user,
+        emp_id: data.empID,
+        dept: data.dept,
+        type: data.type,
+        note: data.note,
+        status: data.status,
+        timestamp: data.timestamp,
+        managed_by: data.managedBy || "ยังไม่มี"
+    })
+    .then((response) => {
+        console.log("Email Sent Successfully!", response.status, response.text);
+    })
+    .catch((err) => {
+        console.error("Email Error: ", err);
+        alert("เกิดข้อผิดพลาดในการส่งเมล: " + JSON.stringify(err));
+    });
+};
         // ฟังก์ชันเปลี่ยน Tab
         window.setAdminTab = (status) => {
             currentAdminTab = status;
