@@ -21,6 +21,9 @@
         .history-card { background: white; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-top: 2rem; }
         .history-header { background: #6366f1; color: white; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
         #pwModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:100; }
+        /* สไตล์ปุ่ม Tab */
+        .tab-btn { padding: 8px 20px; border-radius: 12px; font-weight: bold; font-size: 12px; transition: all 0.2s; border: 2px solid transparent; }
+        .tab-btn.active { border-color: white; background: rgba(255,255,255,0.2); }
     </style>
 </head>
 <body>
@@ -112,17 +115,23 @@
                     <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b font-bold text-slate-500 uppercase"><tr><th class="p-4">รหัสพนักงาน</th><th class="p-4">ชื่อ</th><th class="p-4">หน่วยงาน</th><th class="p-4">TEL</th><th class="p-4">USER</th><th class="p-4">PASS</th><th class="p-4 text-center">ลบ</th></tr></thead><tbody id="adminUserBody" class="divide-y"></tbody></table></div>
                 </div>
             </div>
+            
+            <!-- ส่วนที่ขอให้เพิ่ม: แบ่งแยกรายการใบเบิก -->
             <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border">
-                <div class="p-5 bg-indigo-600 font-bold text-white uppercase text-xs flex justify-between items-center">
-                    <span>รายการใบเบิกทั้งหมด (Staff)</span>
-                    <button id="clearHistoryBtn" onclick="clearAllHistory()" class="bg-red-500 px-3 py-1.5 rounded-lg text-[10px]">ล้างประวัติ</button>
+                <div class="p-5 bg-indigo-600 font-bold text-white uppercase text-xs flex flex-wrap justify-between items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <button onclick="setAdminTab('รอดำเนินการ')" id="tab-pending" class="tab-btn active">1. รอดำเนินการ</button>
+                        <button onclick="setAdminTab('สำเร็จ')" id="tab-success" class="tab-btn">2. เสร็จสิ้น</button>
+                        <button onclick="setAdminTab('ยกเลิก')" id="tab-cancel" class="tab-btn">3. ยกเลิก</button>
+                    </div>
+                    <button id="clearHistoryBtn" onclick="clearAllHistory()" class="bg-red-500 px-3 py-1.5 rounded-lg text-[10px]">ล้างประวัติทั้งหมด</button>
                 </div>
                 <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b font-bold text-slate-500 uppercase"><tr><th class="p-5">วัน/เวลา</th><th class="p-4">รหัส</th><th class="p-4">ชื่อ</th><th class="p-4">หน่วยงาน</th><th class="p-4">ประเภท</th><th class="p-4">หมายเหตุ</th><th class="p-4">ผู้จัดการ</th><th class="p-4 text-center">สถานะ</th></tr></thead><tbody id="adminReqBody" class="divide-y"></tbody></table></div>
             </div>
         </div>
     </div>
 
-    <!-- [4] หน้าสมัครสมาชิก (กู้คืน 24 หน่วยงาน) -->
+    <!-- [4] หน้าสมัครสมาชิก -->
     <div id="regPage" class="page">
         <div class="min-h-screen flex items-center justify-center bg-slate-900 p-4">
             <div class="max-w-lg w-full bg-white rounded-[2rem] p-10 shadow-2xl">
@@ -205,10 +214,21 @@
         let adminUserSession = null;
         let rawRequests = {};
         let rawUsers = {};
+        let currentAdminTab = 'รอดำเนินการ'; // เก็บสถานะ Tab ที่เลือก
 
         window.showPage = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+        };
+
+        // ฟังก์ชันเปลี่ยน Tab
+        window.setAdminTab = (status) => {
+            currentAdminTab = status;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if(status === 'รอดำเนินการ') document.getElementById('tab-pending').classList.add('active');
+            if(status === 'สำเร็จ') document.getElementById('tab-success').classList.add('active');
+            if(status === 'ยกเลิก') document.getElementById('tab-cancel').classList.add('active');
+            renderAdminTables();
         };
 
         document.getElementById('loginForm').onsubmit = async (e) => {
@@ -299,10 +319,24 @@
             const adReq = document.getElementById('adminReqBody');
             const adUser = document.getElementById('adminUserBody');
             adReq.innerHTML = ''; adUser.innerHTML = '';
+            
+            // กรองรายการตาม Tab ที่เลือก
             Object.keys(rawRequests).reverse().forEach(id => {
                 const r = rawRequests[id];
-                adReq.innerHTML += `<tr><td class="p-4 text-[10px]">${r.timestamp}</td><td class="p-4">${r.empID || '-'}</td><td class="p-4 font-bold">${r.user}</td><td class="p-4 text-[10px]">${r.dept}</td><td class="p-4"><button onclick="viewFile('${id}')" class="text-indigo-600 underline font-bold">${r.type}</button></td><td class="p-4 text-xs">${r.note}</td><td class="p-4 text-[10px]">${r.managedBy || '-'}</td><td class="p-4 text-center"><select onchange="updateStatus('${id}', this.value)" class="text-xs border rounded p-1"><option value="รอดำเนินการ" ${r.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option><option value="สำเร็จ" ${r.status==='สำเร็จ'?'selected':''}>สำเร็จ</option><option value="ยกเลิก" ${r.status==='ยกเลิก'?'selected':''}>ยกเลิก</option></select></td></tr>`;
+                
+                // ตรวจสอบเงื่อนไขการกรองสถานะ
+                let isMatch = false;
+                if(currentAdminTab === 'ยกเลิก') {
+                    isMatch = (r.status === 'ยกเลิก' || r.status === 'ยกเลิกเอง');
+                } else {
+                    isMatch = (r.status === currentAdminTab);
+                }
+
+                if(isMatch) {
+                    adReq.innerHTML += `<tr><td class="p-4 text-[10px]">${r.timestamp}</td><td class="p-4">${r.empID || '-'}</td><td class="p-4 font-bold">${r.user}</td><td class="p-4 text-[10px]">${r.dept}</td><td class="p-4"><button onclick="viewFile('${id}')" class="text-indigo-600 underline font-bold">${r.type}</button></td><td class="p-4 text-xs">${r.note}</td><td class="p-4 text-[10px]">${r.managedBy || '-'}</td><td class="p-4 text-center"><select onchange="updateStatus('${id}', this.value)" class="text-xs border rounded p-1"><option value="รอดำเนินการ" ${r.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option><option value="สำเร็จ" ${r.status==='สำเร็จ'?'selected':''}>สำเร็จ</option><option value="ยกเลิก" ${r.status==='ยกเลิก'?'selected':''}>ยกเลิก</option></select></td></tr>`;
+                }
             });
+
             Object.keys(rawUsers).forEach(uk => {
                 const u = rawUsers[uk];
                 adUser.innerHTML += `<tr><td class="p-4">${u.empID}</td><td class="p-4 font-bold">${u.name}</td><td class="p-4">${u.dept}</td><td class="p-4">${u.tel || '-'}</td><td class="p-4">${u.user}</td><td class="p-4"><input type="text" value="${u.pass}" onchange="editUser('${uk}', 'pass', this.value)" class="border px-2 py-1 rounded w-20"></td><td class="p-4 text-center"><button onclick="deleteUser('${uk}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td></tr>`;
@@ -310,17 +344,17 @@
         };
 
         window.updateStatus = (id, val) => {
-    // ดึงชื่อจากหน้าจอที่แสดงชื่อ Admin อยู่ (adminNameDisp)
-    const adminFullName = document.getElementById('adminNameDisp').innerText;
-    update(ref(db, 'requisitions/' + id), { 
-        status: val, 
-        managedBy: adminFullName 
-    });
-};
+            const adminFullName = document.getElementById('adminNameDisp').innerText;
+            update(ref(db, 'requisitions/' + id), { 
+                status: val, 
+                managedBy: adminFullName 
+            });
+        };
+
         window.viewFile = (id) => { const d = rawRequests[id]; if(d && d.fileData) { const nw = window.open(); nw.document.write(`<iframe src="${d.fileData}" frameborder="0" style="width:100%; height:100vh;"></iframe>`); } };
         window.editUser = (id, f, v) => update(ref(db, 'users/' + id), { [f]: v });
         window.deleteUser = (id) => { if(confirm('ลบสมาชิก?')) remove(ref(db, 'users/' + id)); };
-        window.clearAllHistory = () => { if(confirm('ล้างประวัติ?')) remove(ref(db, 'requisitions')); };
+        window.clearAllHistory = () => { if(confirm('ล้างประวัติทั้งหมด?')) remove(ref(db, 'requisitions')); };
         window.userCancelReq = (id) => { if(confirm('ยกเลิกใบเบิก?')) update(ref(db, 'requisitions/' + id), { status: "ยกเลิกเอง", managedBy: "USER" }); };
         window.logout = () => location.reload();
         window.saveSettings = () => update(ref(db, 'settings'), { systemName: document.getElementById('setSystemName').value, logoUrl: document.getElementById('setLogoUrl').value }).then(() => alert("บันทึกสำเร็จ"));
