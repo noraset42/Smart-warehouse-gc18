@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- เพิ่ม EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; }
         .page { display: none; }
@@ -210,6 +212,10 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+
+        // --- เริ่มต้น EmailJS ---
+        emailjs.init("Z4mJ3-rKj462tP_P7"); // Initialize ด้วย Public Key ของคุณ
+
         let currentUser = null;
         let adminUserSession = null;
         let rawRequests = {};
@@ -219,6 +225,20 @@
         window.showPage = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+        };
+
+        // ฟังก์ชันส่งเมลผ่าน EmailJS
+        const sendEmailNotification = (data) => {
+            emailjs.send("service_z62bb85", "template_lcnyrga", {
+                user_name: data.user,
+                emp_id: data.empID,
+                dept: data.dept,
+                type: data.type,
+                note: data.note,
+                status: data.status,
+                timestamp: data.timestamp,
+                managed_by: data.managedBy || "ยังไม่มี"
+            }).then(() => console.log("Email Sent"), (err) => console.log("Email Error: ", err));
         };
 
         // ฟังก์ชันเปลี่ยน Tab
@@ -274,12 +294,18 @@
             if(!file) return alert("เลือกไฟล์ใบเบิก");
             const reader = new FileReader();
             reader.onload = (e) => {
-                push(ref(db, 'requisitions'), {
+                const newReq = {
                     user: currentUser.name, empID: currentUser.empID, dept: currentUser.dept,
                     type, note: document.getElementById(noteId).value || "-",
                     fileData: e.target.result, status: "รอดำเนินการ",
                     timestamp: new Date().toLocaleString('th-TH'), managedBy: ""
-                }).then(() => { alert("ส่งสำเร็จ!"); fileInput.value = ''; document.getElementById(noteId).value = ''; });
+                };
+                push(ref(db, 'requisitions'), newReq).then(() => { 
+                    alert("ส่งสำเร็จ!"); 
+                    sendEmailNotification(newReq); // ส่งแจ้งเตือนเมื่อมีการเบิกใหม่
+                    fileInput.value = ''; 
+                    document.getElementById(noteId).value = ''; 
+                });
             };
             reader.readAsDataURL(file);
         };
@@ -320,11 +346,8 @@
             const adUser = document.getElementById('adminUserBody');
             adReq.innerHTML = ''; adUser.innerHTML = '';
             
-            // กรองรายการตาม Tab ที่เลือก
             Object.keys(rawRequests).reverse().forEach(id => {
                 const r = rawRequests[id];
-                
-                // ตรวจสอบเงื่อนไขการกรองสถานะ
                 let isMatch = false;
                 if(currentAdminTab === 'ยกเลิก') {
                     isMatch = (r.status === 'ยกเลิก' || r.status === 'ยกเลิกเอง');
@@ -345,9 +368,12 @@
 
         window.updateStatus = (id, val) => {
             const adminFullName = document.getElementById('adminNameDisp').innerText;
+            const updatedData = { ...rawRequests[id], status: val, managedBy: adminFullName };
             update(ref(db, 'requisitions/' + id), { 
                 status: val, 
                 managedBy: adminFullName 
+            }).then(() => {
+                sendEmailNotification(updatedData); // ส่งแจ้งเตือนเมื่อ Admin อัปเดตสถานะ
             });
         };
 
@@ -355,7 +381,12 @@
         window.editUser = (id, f, v) => update(ref(db, 'users/' + id), { [f]: v });
         window.deleteUser = (id) => { if(confirm('ลบสมาชิก?')) remove(ref(db, 'users/' + id)); };
         window.clearAllHistory = () => { if(confirm('ล้างประวัติทั้งหมด?')) remove(ref(db, 'requisitions')); };
-        window.userCancelReq = (id) => { if(confirm('ยกเลิกใบเบิก?')) update(ref(db, 'requisitions/' + id), { status: "ยกเลิกเอง", managedBy: "USER" }); };
+        window.userCancelReq = (id) => { if(confirm('ยกเลิกใบเบิก?')) {
+            const updatedData = { ...rawRequests[id], status: "ยกเลิกเอง", managedBy: "USER" };
+            update(ref(db, 'requisitions/' + id), { status: "ยกเลิกเอง", managedBy: "USER" }).then(() => {
+                sendEmailNotification(updatedData); // ส่งแจ้งเตือนเมื่อ User ยกเลิกเอง
+            });
+        }};
         window.logout = () => location.reload();
         window.saveSettings = () => update(ref(db, 'settings'), { systemName: document.getElementById('setSystemName').value, logoUrl: document.getElementById('setLogoUrl').value }).then(() => alert("บันทึกสำเร็จ"));
         
