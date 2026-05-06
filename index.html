@@ -118,7 +118,7 @@
                 </div>
             </div>
             
-            <!-- ส่วนที่ขอให้เพิ่ม: แบ่งแยกรายการใบเบิก -->
+            <!-- รายการใบเบิก -->
             <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border">
                 <div class="p-5 bg-indigo-600 font-bold text-white uppercase text-xs flex flex-wrap justify-between items-center gap-4">
                     <div class="flex items-center gap-2">
@@ -214,42 +214,40 @@
         const db = getDatabase(app);
 
         // --- เริ่มต้น EmailJS ---
-        emailjs.init("Z4mJ3-rKj462tP_P7"); // Initialize ด้วย Public Key ของคุณ
+        emailjs.init("Z4mJ3-rKj462tP_P7");
 
         let currentUser = null;
         let adminUserSession = null;
         let rawRequests = {};
         let rawUsers = {};
-        let currentAdminTab = 'รอดำเนินการ'; // เก็บสถานะ Tab ที่เลือก
+        let currentAdminTab = 'รอดำเนินการ';
 
         window.showPage = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
         };
 
-       // ฟังก์ชันส่งเมลผ่าน EmailJS
-const sendEmailNotification = (data) => {
-    console.log("Starting to send email with data:", data); // เพิ่ม log เพื่อเช็คว่าฟังก์ชันถูกเรียกไหม
+        // ฟังก์ชันส่งเมลผ่าน EmailJS
+        const sendEmailNotification = (data) => {
+            console.log("Attempting to send email...");
+            emailjs.send("service_z62bb85", "template_lcnyrga", {
+                user_name: data.user,
+                emp_id: data.empID,
+                dept: data.dept,
+                type: data.type,
+                note: data.note,
+                status: data.status,
+                timestamp: data.timestamp,
+                managed_by: data.managedBy || "รอดำเนินการ"
+            })
+            .then((response) => {
+                console.log("Email Sent Successfully!", response.status, response.text);
+            })
+            .catch((err) => {
+                console.error("Email Error: ", err);
+            });
+        };
 
-    emailjs.send("service_z62bb85", "template_lcnyrga", {
-        user_name: data.user,
-        emp_id: data.empID,
-        dept: data.dept,
-        type: data.type,
-        note: data.note,
-        status: data.status,
-        timestamp: data.timestamp,
-        managed_by: data.managedBy || "ยังไม่มี"
-    })
-    .then((response) => {
-        console.log("Email Sent Successfully!", response.status, response.text);
-    })
-    .catch((err) => {
-        console.error("Email Error: ", err);
-        alert("เกิดข้อผิดพลาดในการส่งเมล: " + JSON.stringify(err));
-    });
-};
-        // ฟังก์ชันเปลี่ยน Tab
         window.setAdminTab = (status) => {
             currentAdminTab = status;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -263,7 +261,6 @@ const sendEmailNotification = (data) => {
             e.preventDefault();
             const u = document.getElementById('logUser').value.trim();
             const p = document.getElementById('logPass').value.trim();
-
             try {
                 const adminSnap = await get(ref(db, 'admins/' + u));
                 const adminData = adminSnap.val();
@@ -276,7 +273,6 @@ const sendEmailNotification = (data) => {
                     document.getElementById('adminNameDisp').innerText = adminData.name;
                     return showPage('adminPage');
                 }
-
                 const userSnap = await get(ref(db, 'users/' + u));
                 const user = userSnap.val();
                 if(user && String(user.pass) === String(p)) {
@@ -287,13 +283,6 @@ const sendEmailNotification = (data) => {
                     startHistoryListener(); 
                 } else { alert("Username หรือ Password ไม่ถูกต้อง!"); }
             } catch (err) { alert("เกิดข้อผิดพลาดในการเชื่อมต่อ"); }
-        };
-
-        window.changeAdminPassword = () => {
-            const newPass = prompt("ระบุรหัสผ่านใหม่สำหรับ " + adminUserSession + ":");
-            if (newPass && newPass.trim().length >= 4) {
-                update(ref(db, 'admins/' + adminUserSession), { pass: newPass.trim() }).then(() => alert("สำเร็จ"));
-            }
         };
 
         window.handleUpload = (type, fileId, noteId) => {
@@ -310,7 +299,7 @@ const sendEmailNotification = (data) => {
                 };
                 push(ref(db, 'requisitions'), newReq).then(() => { 
                     alert("ส่งสำเร็จ!"); 
-                    sendEmailNotification(newReq); // ส่งแจ้งเตือนเมื่อมีการเบิกใหม่
+                    sendEmailNotification(newReq); // --- เรียกใช้ตรงนี้ ---
                     fileInput.value = ''; 
                     document.getElementById(noteId).value = ''; 
                 });
@@ -353,21 +342,13 @@ const sendEmailNotification = (data) => {
             const adReq = document.getElementById('adminReqBody');
             const adUser = document.getElementById('adminUserBody');
             adReq.innerHTML = ''; adUser.innerHTML = '';
-            
             Object.keys(rawRequests).reverse().forEach(id => {
                 const r = rawRequests[id];
-                let isMatch = false;
-                if(currentAdminTab === 'ยกเลิก') {
-                    isMatch = (r.status === 'ยกเลิก' || r.status === 'ยกเลิกเอง');
-                } else {
-                    isMatch = (r.status === currentAdminTab);
-                }
-
+                let isMatch = (currentAdminTab === 'ยกเลิก') ? (r.status === 'ยกเลิก' || r.status === 'ยกเลิกเอง') : (r.status === currentAdminTab);
                 if(isMatch) {
                     adReq.innerHTML += `<tr><td class="p-4 text-[10px]">${r.timestamp}</td><td class="p-4">${r.empID || '-'}</td><td class="p-4 font-bold">${r.user}</td><td class="p-4 text-[10px]">${r.dept}</td><td class="p-4"><button onclick="viewFile('${id}')" class="text-indigo-600 underline font-bold">${r.type}</button></td><td class="p-4 text-xs">${r.note}</td><td class="p-4 text-[10px]">${r.managedBy || '-'}</td><td class="p-4 text-center"><select onchange="updateStatus('${id}', this.value)" class="text-xs border rounded p-1"><option value="รอดำเนินการ" ${r.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option><option value="สำเร็จ" ${r.status==='สำเร็จ'?'selected':''}>สำเร็จ</option><option value="ยกเลิก" ${r.status==='ยกเลิก'?'selected':''}>ยกเลิก</option></select></td></tr>`;
                 }
             });
-
             Object.keys(rawUsers).forEach(uk => {
                 const u = rawUsers[uk];
                 adUser.innerHTML += `<tr><td class="p-4">${u.empID}</td><td class="p-4 font-bold">${u.name}</td><td class="p-4">${u.dept}</td><td class="p-4">${u.tel || '-'}</td><td class="p-4">${u.user}</td><td class="p-4"><input type="text" value="${u.pass}" onchange="editUser('${uk}', 'pass', this.value)" class="border px-2 py-1 rounded w-20"></td><td class="p-4 text-center"><button onclick="deleteUser('${uk}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td></tr>`;
@@ -381,20 +362,23 @@ const sendEmailNotification = (data) => {
                 status: val, 
                 managedBy: adminFullName 
             }).then(() => {
-                sendEmailNotification(updatedData); // ส่งแจ้งเตือนเมื่อ Admin อัปเดตสถานะ
+                sendEmailNotification(updatedData); // --- เรียกใช้ตรงนี้ ---
             });
+        };
+
+        window.userCancelReq = (id) => { 
+            if(confirm('ยกเลิกใบเบิก?')) {
+                const updatedData = { ...rawRequests[id], status: "ยกเลิกเอง", managedBy: "พนักงานยกเลิก" };
+                update(ref(db, 'requisitions/' + id), { status: "ยกเลิกเอง", managedBy: "พนักงานยกเลิก" }).then(() => {
+                    sendEmailNotification(updatedData); // --- เรียกใช้ตรงนี้ ---
+                });
+            }
         };
 
         window.viewFile = (id) => { const d = rawRequests[id]; if(d && d.fileData) { const nw = window.open(); nw.document.write(`<iframe src="${d.fileData}" frameborder="0" style="width:100%; height:100vh;"></iframe>`); } };
         window.editUser = (id, f, v) => update(ref(db, 'users/' + id), { [f]: v });
         window.deleteUser = (id) => { if(confirm('ลบสมาชิก?')) remove(ref(db, 'users/' + id)); };
         window.clearAllHistory = () => { if(confirm('ล้างประวัติทั้งหมด?')) remove(ref(db, 'requisitions')); };
-        window.userCancelReq = (id) => { if(confirm('ยกเลิกใบเบิก?')) {
-            const updatedData = { ...rawRequests[id], status: "ยกเลิกเอง", managedBy: "USER" };
-            update(ref(db, 'requisitions/' + id), { status: "ยกเลิกเอง", managedBy: "USER" }).then(() => {
-                sendEmailNotification(updatedData); // ส่งแจ้งเตือนเมื่อ User ยกเลิกเอง
-            });
-        }};
         window.logout = () => location.reload();
         window.saveSettings = () => update(ref(db, 'settings'), { systemName: document.getElementById('setSystemName').value, logoUrl: document.getElementById('setLogoUrl').value }).then(() => alert("บันทึกสำเร็จ"));
         
