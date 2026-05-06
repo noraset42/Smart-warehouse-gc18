@@ -21,9 +21,8 @@
         .status-cancel { background: #fee2e2; color: #991b1b; }
         .status-self-cancel { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
         .history-card { background: white; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-top: 2rem; }
-        .history-header { background: #6366f1; color: white; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+        .history-header { background: #6366f1; color: white; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
         #pwModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:100; }
-        /* สไตล์ปุ่ม Tab */
         .tab-btn { padding: 8px 20px; border-radius: 12px; font-weight: bold; font-size: 12px; transition: all 0.2s; border: 2px solid transparent; }
         .tab-btn.active { border-color: white; background: rgba(255,255,255,0.2); }
     </style>
@@ -81,6 +80,10 @@
             <div class="history-card">
                 <div class="history-header">
                     <div class="flex items-center gap-2"><i class="fas fa-history"></i> <span class="font-bold uppercase">ประวัติของคุณ</span></div>
+                    <div class="relative w-full md:w-64">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-indigo-300"></i>
+                        <input type="text" id="userSearchInput" onkeyup="renderUserHistory()" placeholder="ค้นหาใบเบิก..." class="w-full bg-indigo-800/50 border border-indigo-400 text-white text-xs rounded-full py-2 pl-10 pr-4 outline-none focus:ring-2 ring-white/50">
+                    </div>
                 </div>
                 <div class="overflow-x-auto min-h-[300px]"><table class="w-full text-left"><thead class="bg-slate-50 text-slate-400 text-[10px] uppercase font-bold border-b"><tr><th class="p-5">วัน/เวลา</th><th class="p-5">ประเภท</th><th class="p-5">หมายเหตุ</th><th class="p-5">สถานะ</th><th class="p-5">ผู้ดำเนินการ</th><th class="p-5 text-center">จัดการ</th></tr></thead><tbody id="userHistoryBody" class="divide-y text-sm text-slate-600"></tbody></table></div>
             </div>
@@ -126,9 +129,15 @@
                         <button onclick="setAdminTab('สำเร็จ')" id="tab-success" class="tab-btn">2. เสร็จสิ้น</button>
                         <button onclick="setAdminTab('ยกเลิก')" id="tab-cancel" class="tab-btn">3. ยกเลิก</button>
                     </div>
-                    <button id="clearHistoryBtn" onclick="clearAllHistory()" class="bg-red-500 px-3 py-1.5 rounded-lg text-[10px]">ล้างประวัติทั้งหมด</button>
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400"></i>
+                            <input type="text" id="adminSearchInput" onkeyup="renderAdminTables()" placeholder="ค้นหา รหัส/ชื่อ/ประเภท..." class="bg-white text-slate-800 text-[10px] rounded-lg py-1.5 pl-9 pr-4 outline-none focus:ring-2 ring-indigo-300 w-48">
+                        </div>
+                        <button id="clearHistoryBtn" onclick="clearAllHistory()" class="bg-red-500 px-3 py-1.5 rounded-lg text-[10px]">ล้างประวัติทั้งหมด</button>
+                    </div>
                 </div>
-                <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b font-bold text-slate-500 uppercase"><tr><th class="p-5">วัน/เวลา</th><th class="p-4">รหัส</th><th class="p-4">ชื่อ</th><th class="p-4">หน่วยงาน</th><th class="p-4">ประเภท</th><th class="p-4">หมายเหตุ</th><th class="p-4">ผู้จัดการ</th><th class="p-4 text-center">สถานะ</th></tr></thead><tbody id="adminReqBody" class="divide-y"></tbody></table></div>
+                <div class="overflow-x-auto"><table class="w-full text-left text-[11px]"><thead class="bg-slate-50 border-b font-bold text-slate-500 uppercase"><tr><th class="p-5">วัน/เวลา</th><th class="p-4">รหัส</th><th class="p-4">ชื่อ</th><th class="p-4">หน่วยงาน</th><th class="p-4">ประเภท</th><th class="p-4">หมายเหตุ</th><th class="p-4">ผู้จัดการ</th><th class="p-4 text-center">สถานะ</th><th class="p-4 text-center">ลบ</th></tr></thead><tbody id="adminReqBody" class="divide-y"></tbody></table></div>
             </div>
         </div>
     </div>
@@ -213,7 +222,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- เริ่มต้น EmailJS ---
         emailjs.init("ZVQAXAxNL53y8kEcs");
 
         let currentUser = null;
@@ -227,9 +235,7 @@
             document.getElementById(id).classList.add('active');
         };
 
-        // ฟังก์ชันส่งเมลผ่าน EmailJS
         const sendEmailNotification = (data) => {
-            console.log("Attempting to send email...");
             emailjs.send("service_z62bb85", "template_lcnyrga", {
                 user_name: data.user,
                 emp_id: data.empID,
@@ -239,12 +245,6 @@
                 status: data.status,
                 timestamp: data.timestamp,
                 managed_by: data.managedBy || "รอดำเนินการ"
-            })
-            .then((response) => {
-                console.log("Email Sent Successfully!", response.status, response.text);
-            })
-            .catch((err) => {
-                console.error("Email Error: ", err);
             });
         };
 
@@ -299,7 +299,7 @@
                 };
                 push(ref(db, 'requisitions'), newReq).then(() => { 
                     alert("ส่งสำเร็จ!"); 
-                    sendEmailNotification(newReq); // --- เรียกใช้ตรงนี้ ---
+                    sendEmailNotification(newReq);
                     fileInput.value = ''; 
                     document.getElementById(noteId).value = ''; 
                 });
@@ -307,18 +307,25 @@
             reader.readAsDataURL(file);
         };
 
+        // ฟังก์ชัน Render ประวัติฝั่ง User (รวมระบบค้นหา)
+        window.renderUserHistory = () => {
+            const searchTerm = document.getElementById('userSearchInput').value.toLowerCase();
+            const uHist = document.getElementById('userHistoryBody');
+            uHist.innerHTML = '';
+            Object.keys(rawRequests).reverse().forEach(id => {
+                const r = rawRequests[id];
+                const matchSearch = r.type.toLowerCase().includes(searchTerm) || r.note.toLowerCase().includes(searchTerm) || r.status.toLowerCase().includes(searchTerm);
+                if(currentUser && r.user === currentUser.name && matchSearch) {
+                    let sClass = r.status === 'สำเร็จ' ? 'status-success' : (r.status === 'ยกเลิก' ? 'status-cancel' : (r.status === 'ยกเลิกเอง' ? 'status-self-cancel' : 'status-pending'));
+                    uHist.innerHTML += `<tr><td class="p-5 text-[10px]">${r.timestamp}</td><td class="p-5 font-bold">${r.type}</td><td class="p-5 text-xs">${r.note}</td><td class="p-5"><span class="status-badge ${sClass}">${r.status}</span></td><td class="p-5 text-[10px]">${r.managedBy || '-'}</td><td class="p-5 text-center">${r.status === 'รอดำเนินการ' ? `<button onclick="userCancelReq('${id}')" class="text-red-500 font-bold underline">ยกเลิก</button>` : '-'}</td></tr>`;
+                }
+            });
+        };
+
         function startHistoryListener() {
             onValue(ref(db, 'requisitions'), (snap) => {
-                const data = snap.val() || {};
-                const uHist = document.getElementById('userHistoryBody');
-                uHist.innerHTML = '';
-                Object.keys(data).reverse().forEach(id => {
-                    const r = data[id];
-                    if(currentUser && r.user === currentUser.name) {
-                        let sClass = r.status === 'สำเร็จ' ? 'status-success' : (r.status === 'ยกเลิก' ? 'status-cancel' : (r.status === 'ยกเลิกเอง' ? 'status-self-cancel' : 'status-pending'));
-                        uHist.innerHTML += `<tr><td class="p-5 text-[10px]">${r.timestamp}</td><td class="p-5 font-bold">${r.type}</td><td class="p-5 text-xs">${r.note}</td><td class="p-5"><span class="status-badge ${sClass}">${r.status}</span></td><td class="p-5 text-[10px]">${r.managedBy || '-'}</td><td class="p-5 text-center">${r.status === 'รอดำเนินการ' ? `<button onclick="userCancelReq('${id}')" class="text-red-500">ยกเลิก</button>` : '-'}</td></tr>`;
-                    }
-                });
+                rawRequests = snap.val() || {};
+                renderUserHistory();
             });
         }
 
@@ -338,17 +345,41 @@
             }
         });
 
-        const renderAdminTables = () => {
+        // ฟังก์ชัน Render ฝั่ง Admin (รวมระบบค้นหา และ ปุ่มลบ)
+        window.renderAdminTables = () => {
+            const searchTerm = document.getElementById('adminSearchInput').value.toLowerCase();
             const adReq = document.getElementById('adminReqBody');
             const adUser = document.getElementById('adminUserBody');
             adReq.innerHTML = ''; adUser.innerHTML = '';
+
             Object.keys(rawRequests).reverse().forEach(id => {
                 const r = rawRequests[id];
-                let isMatch = (currentAdminTab === 'ยกเลิก') ? (r.status === 'ยกเลิก' || r.status === 'ยกเลิกเอง') : (r.status === currentAdminTab);
-                if(isMatch) {
-                    adReq.innerHTML += `<tr><td class="p-4 text-[10px]">${r.timestamp}</td><td class="p-4">${r.empID || '-'}</td><td class="p-4 font-bold">${r.user}</td><td class="p-4 text-[10px]">${r.dept}</td><td class="p-4"><button onclick="viewFile('${id}')" class="text-indigo-600 underline font-bold">${r.type}</button></td><td class="p-4 text-xs">${r.note}</td><td class="p-4 text-[10px]">${r.managedBy || '-'}</td><td class="p-4 text-center"><select onchange="updateStatus('${id}', this.value)" class="text-xs border rounded p-1"><option value="รอดำเนินการ" ${r.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option><option value="สำเร็จ" ${r.status==='สำเร็จ'?'selected':''}>สำเร็จ</option><option value="ยกเลิก" ${r.status==='ยกเลิก'?'selected':''}>ยกเลิก</option></select></td></tr>`;
+                let isMatchTab = (currentAdminTab === 'ยกเลิก') ? (r.status === 'ยกเลิก' || r.status === 'ยกเลิกเอง') : (r.status === currentAdminTab);
+                const isMatchSearch = (r.user || "").toLowerCase().includes(searchTerm) || (r.empID || "").toLowerCase().includes(searchTerm) || (r.type || "").toLowerCase().includes(searchTerm) || (r.dept || "").toLowerCase().includes(searchTerm);
+                
+                if(isMatchTab && isMatchSearch) {
+                    adReq.innerHTML += `<tr>
+                        <td class="p-4 text-[10px]">${r.timestamp}</td>
+                        <td class="p-4">${r.empID || '-'}</td>
+                        <td class="p-4 font-bold">${r.user}</td>
+                        <td class="p-4 text-[10px]">${r.dept}</td>
+                        <td class="p-4"><button onclick="viewFile('${id}')" class="text-indigo-600 underline font-bold">${r.type}</button></td>
+                        <td class="p-4 text-xs">${r.note}</td>
+                        <td class="p-4 text-[10px]">${r.managedBy || '-'}</td>
+                        <td class="p-4 text-center">
+                            <select onchange="updateStatus('${id}', this.value)" class="text-xs border rounded p-1">
+                                <option value="รอดำเนินการ" ${r.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option>
+                                <option value="สำเร็จ" ${r.status==='สำเร็จ'?'selected':''}>สำเร็จ</option>
+                                <option value="ยกเลิก" ${r.status==='ยกเลิก'?'selected':''}>ยกเลิก</option>
+                            </select>
+                        </td>
+                        <td class="p-4 text-center">
+                            <button onclick="deleteSingleHistory('${id}')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>`;
                 }
             });
+
             Object.keys(rawUsers).forEach(uk => {
                 const u = rawUsers[uk];
                 adUser.innerHTML += `<tr><td class="p-4">${u.empID}</td><td class="p-4 font-bold">${u.name}</td><td class="p-4">${u.dept}</td><td class="p-4">${u.tel || '-'}</td><td class="p-4">${u.user}</td><td class="p-4"><input type="text" value="${u.pass}" onchange="editUser('${uk}', 'pass', this.value)" class="border px-2 py-1 rounded w-20"></td><td class="p-4 text-center"><button onclick="deleteUser('${uk}')" class="text-red-500"><i class="fas fa-trash-alt"></i></button></td></tr>`;
@@ -358,20 +389,23 @@
         window.updateStatus = (id, val) => {
             const adminFullName = document.getElementById('adminNameDisp').innerText;
             const updatedData = { ...rawRequests[id], status: val, managedBy: adminFullName };
-            update(ref(db, 'requisitions/' + id), { 
-                status: val, 
-                managedBy: adminFullName 
-            }).then(() => {
-                sendEmailNotification(updatedData); // --- เรียกใช้ตรงนี้ ---
+            update(ref(db, 'requisitions/' + id), { status: val, managedBy: adminFullName }).then(() => {
+                sendEmailNotification(updatedData);
             });
         };
 
         window.userCancelReq = (id) => { 
-            if(confirm('ยกเลิกใบเบิก?')) {
+            if(confirm('ยืนยันการยกเลิกใบเบิกนี้?')) {
                 const updatedData = { ...rawRequests[id], status: "ยกเลิกเอง", managedBy: "พนักงานยกเลิก" };
                 update(ref(db, 'requisitions/' + id), { status: "ยกเลิกเอง", managedBy: "พนักงานยกเลิก" }).then(() => {
-                    sendEmailNotification(updatedData); // --- เรียกใช้ตรงนี้ ---
+                    sendEmailNotification(updatedData);
                 });
+            }
+        };
+
+        window.deleteSingleHistory = (id) => {
+            if(confirm('ต้องการลบประวัติรายการนี้ใช่หรือไม่? (ลบแล้วกู้คืนไม่ได้)')) {
+                remove(ref(db, 'requisitions/' + id)).then(() => alert("ลบสำเร็จ"));
             }
         };
 
